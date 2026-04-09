@@ -1,0 +1,49 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class CashboxIncomeModel {
+  final String orderId;
+  final double orderTotal;
+  final double deliveryFee;
+  final String customerName;
+  final String customerPhone;
+  final String? paymentMethod;
+  final bool includeInCashbox;
+  final DateTime createdAt;
+
+  const CashboxIncomeModel({
+    required this.orderId,
+    required this.orderTotal,
+    required this.deliveryFee,
+    required this.customerName,
+    required this.customerPhone,
+    this.paymentMethod,
+    required this.includeInCashbox,
+    required this.createdAt,
+  });
+
+  factory CashboxIncomeModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return CashboxIncomeModel(
+      orderId: doc.id,
+      orderTotal: (data['orderTotal'] as num?)?.toDouble() ?? 0,
+      deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0,
+      customerName: data['customerName'] as String? ?? '',
+      customerPhone: data['customerPhone'] as String? ?? '',
+      paymentMethod: data['paymentMethod'] as String?,
+      includeInCashbox: data['includeInCashbox'] as bool? ?? true,
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+    'orderTotal': orderTotal,
+    'deliveryFee': deliveryFee,
+    'customerName': customerName,
+    'customerPhone': customerPhone,
+    if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    'includeInCashbox': includeInCashbox,
+    'createdAt': Timestamp.fromDate(createdAt),
+  };
+}
