@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
 import 'package:diamond_clean/core/utils/whatsapp_invoice_service.dart';
-import 'package:diamond_clean/features/categories/cubit/category_cubit.dart';
-import 'package:diamond_clean/features/categories/cubit/category_state.dart';
 import '../../core/orders_grouping.dart';
 import '../../cubit/orders_cubit.dart';
 import '../../cubit/orders_state.dart';
@@ -33,9 +31,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _searchController = TextEditingController();
     expandedDays = {};
     context.read<OrdersCubit>().listenToOrders();
-    if (context.read<CategoryCubit>().state is CategoryInitial) {
-      context.read<CategoryCubit>().loadCategories();
-    }
   }
 
   @override
@@ -60,19 +55,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         expandedDays.add(day);
       }
     });
-  }
-
-  List<OrderModel> _enrichOrdersWithCategoryData(List<OrderModel> orders) {
-    final categoryState = context.read<CategoryCubit>().state;
-    if (categoryState is! CategoryLoaded) return orders;
-
-    return orders.map((order) {
-      final match = categoryState.categories
-          .where((c) => c.name == order.categoryName)
-          .firstOrNull;
-      if (match == null) return order;
-      return order.copyWith(hasDimensions: match.hasDimensions);
-    }).toList();
   }
 
   void _showPricingDialog(OrderModel order) {
@@ -154,8 +136,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOrdersResult(List<OrderModel> orders) {
-    final enrichedOrders = _enrichOrdersWithCategoryData(orders);
-    final filteredOrders = _filterOrders(enrichedOrders);
+    final filteredOrders = _filterOrders(orders);
 
     if (filteredOrders.isEmpty) {
       return Center(

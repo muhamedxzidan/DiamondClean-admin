@@ -19,16 +19,20 @@ class CategoriesRemoteDataSourceImpl implements CategoriesRemoteDataSource {
   }
 
   @override
-  Future<void> addCategory(String name) async {
+  Future<void> addCategory(String name, bool hasDimensions) async {
     await _collection.add({
       'name': name,
+      'hasDimensions': hasDimensions,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
   @override
-  Future<void> updateCategory(String id, String name) async {
-    await _collection.doc(id).update({'name': name});
+  Future<void> updateCategory(String id, String name, bool hasDimensions) async {
+    await _collection.doc(id).update({
+      'name': name,
+      'hasDimensions': hasDimensions,
+    });
   }
 
   @override

@@ -21,6 +21,8 @@ class OrderModel {
   final double deliveryFee;
   final bool includeInCashbox;
   final OrderPaymentMethod? paymentMethod;
+  final int? invoiceNumber;
+  final bool hasDimensions;
   final DateTime createdAt;
 
   const OrderModel({
@@ -38,6 +40,8 @@ class OrderModel {
     this.deliveryFee = 0,
     this.includeInCashbox = true,
     this.paymentMethod,
+    this.invoiceNumber,
+    this.hasDimensions = true,
     required this.createdAt,
   });
 
@@ -50,6 +54,12 @@ class OrderModel {
 
   bool get allItemsPriced =>
       items.isNotEmpty && items.every((e) => e.hasPricing);
+
+  String get displayRef {
+    if (invoiceNumber == null) return customerCode.trim();
+    final code = customerCode.trim().isEmpty ? '?' : customerCode.trim();
+    return '$code - $invoiceNumber';
+  }
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -74,6 +84,8 @@ class OrderModel {
       deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0,
       includeInCashbox: data['includeInCashbox'] as bool? ?? true,
       paymentMethod: _paymentMethodFromString(data['paymentMethod'] as String?),
+      invoiceNumber: (data['invoiceNumber'] as num?)?.toInt(),
+      hasDimensions: data['hasDimensions'] as bool? ?? true,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -94,6 +106,7 @@ class OrderModel {
     'deliveryFee': deliveryFee,
     'includeInCashbox': includeInCashbox,
     if (paymentMethod != null) 'paymentMethod': paymentMethod!.name,
+    'hasDimensions': hasDimensions,
     'createdAt': Timestamp.fromDate(createdAt),
   };
 
@@ -103,6 +116,7 @@ class OrderModel {
     double? deliveryFee,
     bool? includeInCashbox,
     OrderPaymentMethod? paymentMethod,
+    bool? hasDimensions,
   }) => OrderModel(
     id: id,
     customerCode: customerCode,
@@ -117,6 +131,8 @@ class OrderModel {
     deliveryFee: deliveryFee ?? this.deliveryFee,
     includeInCashbox: includeInCashbox ?? this.includeInCashbox,
     paymentMethod: paymentMethod ?? this.paymentMethod,
+    invoiceNumber: invoiceNumber,
+    hasDimensions: hasDimensions ?? this.hasDimensions,
     createdAt: createdAt,
     notes: notes,
   );

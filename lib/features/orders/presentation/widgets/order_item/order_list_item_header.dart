@@ -53,8 +53,8 @@ class OrderListItemHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      order.customerCode,
-                      style: textTheme.labelSmall?.copyWith(
+                      order.displayRef,
+                      style: textTheme.labelMedium?.copyWith(
                         color: colorScheme.onTertiary,
                         fontWeight: FontWeight.bold,
                       ),

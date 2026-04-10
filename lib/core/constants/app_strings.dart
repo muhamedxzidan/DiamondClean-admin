@@ -54,6 +54,7 @@ class AppStrings {
   static const String editPrice = 'تعديل السعر';
   static const String printOrder = 'طباعة الطلب';
   static const String noPriceSet = 'لم يُحدد السعر بعد';
+  static const String orderRef = 'رقم الفاتورة';
   static const String currency = 'ج.م';
   static const String enterPrice = 'أدخل السعر';
   static const String statusPending = 'مرحله الغسيل قيد الانتظار';

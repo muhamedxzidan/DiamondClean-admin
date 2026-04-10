@@ -70,6 +70,21 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     String? paymentMethod,
   }) => _collection.doc(id).update({
     'status': status.name,
-    'paymentMethod': ?paymentMethod,
+    'paymentMethod': paymentMethod,
   });
+
+  @override
+  Future<void> assignInvoiceNumber(String orderId) async {
+    final counterRef = _firestore
+        .collection(FirebaseConstants.countersCollection)
+        .doc('invoiceNumber');
+    final orderRef = _collection.doc(orderId);
+
+    await _firestore.runTransaction((tx) async {
+      final counterSnap = await tx.get(counterRef);
+      final nextNumber = ((counterSnap.data()?['count'] as num?)?.toInt() ?? 0) + 1;
+      tx.set(counterRef, {'count': nextNumber}, SetOptions(merge: true));
+      tx.update(orderRef, {'invoiceNumber': nextNumber});
+    });
+  }
 }

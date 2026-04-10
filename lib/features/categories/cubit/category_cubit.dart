@@ -18,10 +18,10 @@ class CategoryCubit extends Cubit<CategoryState> {
     }
   }
 
-  Future<void> addCategory(String name) async {
+  Future<void> addCategory(String name, bool hasDimensions) async {
     emit(const CategoryOperationLoading());
     try {
-      await _dataSource.addCategory(name);
+      await _dataSource.addCategory(name, hasDimensions);
       emit(const CategoryOperationSuccess());
       await loadCategories();
     } catch (e) {
@@ -29,10 +29,10 @@ class CategoryCubit extends Cubit<CategoryState> {
     }
   }
 
-  Future<void> updateCategory(String id, String name) async {
+  Future<void> updateCategory(String id, String name, bool hasDimensions) async {
     emit(const CategoryOperationLoading());
     try {
-      await _dataSource.updateCategory(id, name);
+      await _dataSource.updateCategory(id, name, hasDimensions);
       emit(const CategoryOperationSuccess());
       await loadCategories();
     } catch (e) {

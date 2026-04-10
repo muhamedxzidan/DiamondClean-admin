@@ -6,7 +6,10 @@ import 'package:diamond_clean/core/constants/app_strings.dart';
 class OrderItemRow extends StatelessWidget {
   final OrderItemModel item;
 
-  const OrderItemRow({super.key, required this.item});
+  const OrderItemRow({
+    super.key,
+    required this.item,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +49,13 @@ class OrderItemRow extends StatelessWidget {
                 ),
             ],
           ),
-          if (item.hasPricing && item.quantity > 1)
+          if (item.hasPricing && _hasDimensionalUnits())
             Padding(
               padding: const EdgeInsets.only(right: 22),
               child: Column(
                 children: [
                   for (var i = 0; i < item.units.length; i++)
-                    if (item.units[i].hasPricing)
+                    if (item.units[i].hasPricing && item.units[i].isDimensional)
                       Padding(
                         padding: const EdgeInsets.only(top: 2, right: 28),
                         child: Text(
@@ -71,5 +74,9 @@ class OrderItemRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  bool _hasDimensionalUnits() {
+    return item.units.any((u) => u.isDimensional);
   }
 }

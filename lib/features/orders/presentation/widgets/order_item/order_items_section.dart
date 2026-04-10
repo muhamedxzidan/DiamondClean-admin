@@ -59,7 +59,9 @@ class OrderItemsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        ...order.items.map((item) => OrderItemRow(item: item)),
+        ...order.items.map(
+          (item) => OrderItemRow(item: item),
+        ),
       ],
     );
   }
@@ -72,7 +74,7 @@ class _QuickInvoiceButton extends StatefulWidget {
   const _QuickInvoiceButton({required this.order, required this.onSendInvoice});
 
   @override
-  State<_QuickInvoiceButton> createState() => _QuickInvoiceButtonState();
+  _QuickInvoiceButtonState createState() => _QuickInvoiceButtonState();
 }
 
 class _QuickInvoiceButtonState extends State<_QuickInvoiceButton> {

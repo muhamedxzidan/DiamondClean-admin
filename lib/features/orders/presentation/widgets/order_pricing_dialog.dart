@@ -6,11 +6,11 @@ import 'package:diamond_clean/core/utils/whatsapp_invoice_service.dart';
 import '../../cubit/orders_cubit.dart';
 import '../../cubit/orders_state.dart';
 import '../../data/models/order_model.dart';
+import '../../data/models/order_item_model.dart';
 import 'pricing_dialog/order_pricing_header.dart';
 import 'pricing_dialog/item_pricing_section.dart';
 import 'pricing_dialog/pricing_number_field.dart';
 import 'pricing_dialog/order_pricing_footer.dart';
-import 'pricing_dialog/unit_controllers.dart';
 import 'pricing_dialog/order_pricing_calculator.dart';
 
 class OrderPricingDialog extends StatefulWidget {
@@ -24,54 +24,36 @@ class OrderPricingDialog extends StatefulWidget {
 
 class _OrderPricingDialogState extends State<OrderPricingDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final List<List<UnitControllers>> _controllers;
+  late final List<GlobalKey<ItemPricingSectionState>> _sectionKeys;
   late final TextEditingController _deliveryFeeController;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _sectionKeys = List.generate(
+      widget.order.items.length,
+      (_) => GlobalKey<ItemPricingSectionState>(),
+    );
     _deliveryFeeController = TextEditingController(
       text: widget.order.deliveryFee > 0
           ? widget.order.deliveryFee.toString()
           : '',
     );
-    _initializeControllers();
-  }
-
-  void _initializeControllers() {
-    _controllers = widget.order.items.map((item) {
-      return List.generate(item.quantity, (unitIdx) {
-        final unit = unitIdx < item.expandedUnits.length
-            ? item.expandedUnits[unitIdx]
-            : item.expandedUnits.isEmpty
-            ? null
-            : item.expandedUnits.first;
-        return UnitControllers(
-          width: TextEditingController(text: unit?.width?.toString() ?? ''),
-          height: TextEditingController(text: unit?.height?.toString() ?? ''),
-          price: TextEditingController(text: unit?.unitPrice?.toString() ?? ''),
-        );
-      });
-    }).toList();
   }
 
   @override
   void dispose() {
     _deliveryFeeController.dispose();
-    for (final itemControllers in _controllers) {
-      for (final c in itemControllers) {
-        c.dispose();
-      }
-    }
     super.dispose();
   }
 
   double? _getTotal() {
-    final items = OrderPricingCalculator.buildItems(
-      widget.order.items,
-      _controllers,
-    );
+    final items = _sectionKeys
+        .map((k) => k.currentState?.buildItem())
+        .whereType<OrderItemModel>()
+        .toList();
+    if (items.length != widget.order.items.length) return null;
     final deliveryFee = double.tryParse(_deliveryFeeController.text.trim());
     return OrderPricingCalculator.calculateTotal(items, deliveryFee);
   }
@@ -80,10 +62,7 @@ class _OrderPricingDialogState extends State<OrderPricingDialog> {
     if (!_formKey.currentState!.validate()) return;
     final orderTotal = _getTotal();
     if (orderTotal == null) return;
-    final items = OrderPricingCalculator.buildItems(
-      widget.order.items,
-      _controllers,
-    );
+    final items = _sectionKeys.map((k) => k.currentState!.buildItem()).toList();
     setState(() => _isSaving = true);
     await context.read<OrdersCubit>().updateOrderItems(
       widget.order.id,
@@ -112,8 +91,8 @@ class _OrderPricingDialogState extends State<OrderPricingDialog> {
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
+          const SnackBar(
+            content: Text(
               'تعذّر إرسال الفاتورة، تأكد من تثبيت واتساب ومن صحة رقم العميل',
             ),
             backgroundColor: Colors.red,
@@ -162,11 +141,10 @@ class _OrderPricingDialogState extends State<OrderPricingDialog> {
                       for (var i = 0; i < widget.order.items.length; i++) ...[
                         if (i > 0) const SizedBox(height: 16),
                         ItemPricingSection(
+                          key: _sectionKeys[i],
                           item: widget.order.items[i],
-                          itemIndex: i,
-                          controllers: _controllers,
                           validator: _validatePositiveNumber,
-                          onChanged: (_) => setState(() {}),
+                          onChanged: () => setState(() {}),
                         ),
                       ],
                       const SizedBox(height: 16),

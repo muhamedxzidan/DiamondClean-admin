@@ -33,6 +33,7 @@ class PrintPreviewDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              PrintRow(label: AppStrings.orderRef, value: order.displayRef),
               PrintRow(
                 label: AppStrings.orderCustomer,
                 value: order.customerName,
@@ -58,7 +59,9 @@ class PrintPreviewDialog extends StatelessWidget {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ...order.items.map((item) => PrintItemRow(item: item)),
+                ...order.items.map(
+                  (item) => PrintItemRow(item: item),
+                ),
               ],
               if (order.deliveryFee > 0) ...[
                 const Divider(height: 24),

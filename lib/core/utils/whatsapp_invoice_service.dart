@@ -39,11 +39,10 @@ class WhatsappInvoiceService {
 String buildInvoiceMessage(OrderModel order) {
   final buffer = StringBuffer()
     ..writeln('Diamond Clean')
-    ..writeln('رقم الفاتورة: ${_formatOrderNumber(order.id)}')
+    ..writeln('رقم الفاتورة: ${order.displayRef}')
     ..writeln('التاريخ: ${_formatDate(order.createdAt)}')
     ..writeln('--------------------')
     ..writeln('العميل: ${order.customerName}')
-    ..writeln('كود العميل: ${_formatValue(order.customerCode)}')
     ..writeln('الهاتف: ${order.customerPhone}');
 
   if (order.address.trim().isNotEmpty) {
@@ -51,7 +50,7 @@ String buildInvoiceMessage(OrderModel order) {
   }
   if (order.driverName.trim().isNotEmpty || order.carNumber.trim().isNotEmpty) {
     buffer.writeln(
-      'المندوب: ${_formatValue(order.driverName)} (${_formatValue(order.carNumber)})',
+      'المندوب: ${order.driverName.trim()} (${order.carNumber.trim()})',
     );
   }
   if (order.categoryName.trim().isNotEmpty) {
@@ -67,13 +66,15 @@ String buildInvoiceMessage(OrderModel order) {
       buffer.writeln('- ${item.name} × ${item.quantity}');
       if (!item.hasPricing) {
         buffer.writeln('   غير مسعّر بعد');
-      } else {
+      } else if (item.units.any((u) => u.isDimensional)) {
         for (final unit in item.expandedUnits) {
           buffer.writeln(
             '   - ${_formatMeasure(unit.width)} × ${_formatMeasure(unit.height)} م = ${_formatMoney(unit.total)}',
           );
         }
         buffer.writeln('   الإجمالي: ${_formatMoney(item.itemTotal)}');
+      } else {
+        buffer.writeln('   ${_formatMoney(item.itemTotal)}');
       }
       buffer.writeln();
     }
@@ -116,16 +117,6 @@ String _formatDate(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
   final day = date.day.toString().padLeft(2, '0');
   return '$year/$month/$day';
-}
-
-String _formatValue(String value) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? 'غير محدد' : trimmed;
-}
-
-String _formatOrderNumber(String value) {
-  final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-  return digits.isEmpty ? 'غير متاح' : digits;
 }
 
 String _formatMeasure(double? value) => value?.toStringAsFixed(2) ?? '-';

@@ -6,11 +6,23 @@ class ItemUnitModel {
   const ItemUnitModel({this.width, this.height, this.unitPrice});
 
   double? get total {
-    if (width == null || height == null || unitPrice == null) return null;
-    return width! * height! * unitPrice!;
+    if (unitPrice == null) return null;
+    if (width == null && height == null) return unitPrice; // flat price per unit
+    if (width != null && height != null) return width! * height! * unitPrice!;
+    return null;
   }
 
-  bool get hasPricing => width != null && height != null && unitPrice != null;
+  bool get hasPricing {
+    if (unitPrice == null) return false;
+    if (width == null && height == null) return true; // flat price
+    return width != null && height != null;
+  }
+
+  /// Returns true if this unit has dimensional pricing (width × height)
+  bool get isDimensional => width != null && height != null;
+
+  /// Returns true if this unit has flat pricing (only unitPrice)
+  bool get isFlatPrice => width == null && height == null && unitPrice != null;
 
   factory ItemUnitModel.fromMap(Map<String, dynamic> map) => ItemUnitModel(
     width: (map['width'] as num?)?.toDouble(),

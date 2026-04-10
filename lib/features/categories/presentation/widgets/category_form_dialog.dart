@@ -37,9 +37,13 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
     if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
     if (_isEditing) {
-      context.read<CategoryCubit>().updateCategory(widget.category!.id, name);
+      context.read<CategoryCubit>().updateCategory(
+        widget.category!.id,
+        name,
+        widget.category!.hasDimensions,
+      );
     } else {
-      context.read<CategoryCubit>().addCategory(name);
+      context.read<CategoryCubit>().addCategory(name, false);
     }
   }
 
@@ -58,16 +62,23 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
         title: Text(_isEditing ? AppStrings.editCategory : AppStrings.addCategory),
         content: Form(
           key: _formKey,
-          child: TextFormField(
-            controller: _nameController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: AppStrings.categoryName,
-              border: OutlineInputBorder(),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.categoryName,
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
+                  onFieldSubmitted: (_) => _submit(),
+                ),
+              ],
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
-            onFieldSubmitted: (_) => _submit(),
           ),
         ),
         actions: [

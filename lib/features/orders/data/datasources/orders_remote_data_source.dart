@@ -20,4 +20,5 @@ abstract class OrdersRemoteDataSource {
     OrderStatus status, {
     String? paymentMethod,
   });
+  Future<void> assignInvoiceNumber(String orderId);
 }
