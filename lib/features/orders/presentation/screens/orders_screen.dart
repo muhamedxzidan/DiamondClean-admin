@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
 import 'package:diamond_clean/core/utils/whatsapp_invoice_service.dart';
+import 'package:diamond_clean/features/categories/cubit/category_cubit.dart';
+import 'package:diamond_clean/features/categories/cubit/category_state.dart';
 import '../../core/orders_grouping.dart';
 import '../../cubit/orders_cubit.dart';
 import '../../cubit/orders_state.dart';
@@ -24,6 +26,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   late final TextEditingController _searchController;
   late Set<DateTime> expandedDays;
   String _searchQuery = '';
+  String _lastSearchQuery = '';
+  List<OrderModel> _lastFilteredOrders = [];
+  Map<DateTime, List<OrderModel>>? _cachedGrouped;
 
   @override
   void initState() {
@@ -31,6 +36,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _searchController = TextEditingController();
     expandedDays = {};
     context.read<OrdersCubit>().listenToOrders();
+    if (context.read<CategoryCubit>().state is CategoryInitial) {
+      context.read<CategoryCubit>().loadCategories();
+    }
   }
 
   @override
@@ -58,11 +66,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _showPricingDialog(OrderModel order) {
+    final catState = context.read<CategoryCubit>().state;
+    bool hasDimensions = true;
+    if (catState is CategoryLoaded) {
+      final category = catState.categories
+          .where((c) => c.name == order.categoryName)
+          .firstOrNull;
+      if (category != null) {
+        hasDimensions = category.hasDimensions;
+      }
+    }
+
     showDialog(
       context: context,
       builder: (_) => BlocProvider.value(
         value: context.read<OrdersCubit>(),
-        child: OrderPricingDialog(order: order),
+        child: OrderPricingDialog(order: order, hasDimensions: hasDimensions),
       ),
     );
   }
@@ -160,7 +179,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildGroupedOrders(List<OrderModel> orders) {
     _initializeexpandedDays(orders);
-    final grouped = OrdersGrouping.groupOrdersByDay(orders);
+
+    // Memoize grouped orders: only recalculate if search query changed
+    if (_lastSearchQuery != _searchQuery) {
+      _lastSearchQuery = _searchQuery;
+      _lastFilteredOrders = _filterOrders(orders);
+      _cachedGrouped = OrdersGrouping.groupOrdersByDay(_lastFilteredOrders);
+    }
+
+    final grouped = _cachedGrouped!;
     final days = grouped.keys.toList();
 
     return ListView.builder(

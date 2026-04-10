@@ -31,6 +31,12 @@ class DashboardShell extends StatefulWidget {
 class _DashboardShellState extends State<DashboardShell> {
   int _selectedIndex = 0;
 
+  late final CustomersCubit _customersCubit;
+  late final OrdersCubit _ordersCubit;
+  late final CategoryCubit _categoryCubit;
+  late final CarCubit _carCubit;
+  late final CashboxCubit _cashboxCubit;
+
   static const _navItems = [
     _NavItem(icon: Icons.receipt_long_outlined, label: AppStrings.orders),
     _NavItem(icon: Icons.people_outlined, label: AppStrings.customers),
@@ -42,58 +48,58 @@ class _DashboardShellState extends State<DashboardShell> {
     ),
   ];
 
-  Widget _buildBody() => switch (_selectedIndex) {
-    0 => MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) => CustomersCubit(
-            CustomersRemoteDataSourceImpl(FirebaseFirestore.instance),
-          ),
-        ),
-        BlocProvider(
-          create: (context) => OrdersCubit(
-            OrdersRemoteDataSourceImpl(FirebaseFirestore.instance),
-            context.read<CustomersCubit>(),
-            cashboxDataSource: CashboxRemoteDataSourceImpl(
-              FirebaseFirestore.instance,
-            ),
-          ),
-        ),
-      ],
-      child: const OrdersScreen(),
-    ),
-    1 => BlocProvider(
-      create: (_) => CustomersCubit(
-        CustomersRemoteDataSourceImpl(FirebaseFirestore.instance),
-      ),
-      child: const CustomersScreen(),
-    ),
-    2 => BlocProvider(
-      create: (_) => CategoryCubit(
-        CategoriesRemoteDataSourceImpl(FirebaseFirestore.instance),
-      ),
-      child: const CategoriesScreen(),
-    ),
-    3 => BlocProvider(
-      create: (_) =>
-          CarCubit(CarsRemoteDataSourceImpl(FirebaseFirestore.instance)),
-      child: const CarsScreen(),
-    ),
-    4 => BlocProvider(
-      create: (_) =>
-          CashboxCubit(CashboxRemoteDataSourceImpl(FirebaseFirestore.instance)),
-      child: const CashboxScreen(),
-    ),
-    _ => const SizedBox.shrink(),
-  };
+  @override
+  void initState() {
+    super.initState();
+    final firestore = FirebaseFirestore.instance;
+    _customersCubit = CustomersCubit(CustomersRemoteDataSourceImpl(firestore));
+    _categoryCubit = CategoryCubit(CategoriesRemoteDataSourceImpl(firestore));
+    _carCubit = CarCubit(CarsRemoteDataSourceImpl(firestore));
+    _cashboxCubit = CashboxCubit(CashboxRemoteDataSourceImpl(firestore));
+    _ordersCubit = OrdersCubit(
+      OrdersRemoteDataSourceImpl(firestore),
+      _customersCubit,
+      cashboxDataSource: CashboxRemoteDataSourceImpl(firestore),
+    );
+  }
+
+  @override
+  void dispose() {
+    _customersCubit.close();
+    _ordersCubit.close();
+    _categoryCubit.close();
+    _carCubit.close();
+    _cashboxCubit.close();
+    super.dispose();
+  }
+
+  Widget _buildTabsContent() => IndexedStack(
+    index: _selectedIndex,
+    children: const [
+      OrdersScreen(),
+      CustomersScreen(),
+      CategoriesScreen(),
+      CarsScreen(),
+      CashboxScreen(),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
     final isWideScreen = MediaQuery.of(context).size.width > 600;
 
-    return isWideScreen
-        ? _buildWideLayout(context)
-        : _buildCompactLayout(context);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _customersCubit),
+        BlocProvider.value(value: _ordersCubit),
+        BlocProvider.value(value: _categoryCubit),
+        BlocProvider.value(value: _carCubit),
+        BlocProvider.value(value: _cashboxCubit),
+      ],
+      child: isWideScreen
+          ? _buildWideLayout(context)
+          : _buildCompactLayout(context),
+    );
   }
 
   Widget _buildWideLayout(BuildContext context) {
@@ -148,7 +154,7 @@ class _DashboardShellState extends State<DashboardShell> {
                 .toList(),
           ),
           const VerticalDivider(width: 1),
-          Expanded(child: _buildBody()),
+          Expanded(child: _buildTabsContent()),
         ],
       ),
     );
@@ -171,7 +177,7 @@ class _DashboardShellState extends State<DashboardShell> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildTabsContent(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),

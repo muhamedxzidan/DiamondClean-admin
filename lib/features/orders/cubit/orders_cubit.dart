@@ -17,6 +17,7 @@ class OrdersCubit extends Cubit<OrdersState> {
   final CashboxRemoteDataSource? _cashboxDataSource;
   StreamSubscription<List<OrderModel>>? _subscription;
   List<OrderModel> _currentOrders = [];
+  final Set<String> _pendingInvoiceIds = {};
 
   OrdersCubit(
     this._dataSource,
@@ -30,7 +31,22 @@ class OrdersCubit extends Cubit<OrdersState> {
     _subscription = _dataSource.watchOrders().listen((orders) {
       _currentOrders = orders;
       emit(OrdersLoaded(orders));
+      _assignMissingInvoiceNumbers(orders);
     }, onError: (Object e) => emit(OrdersError(e.toString())));
+  }
+
+  void _assignMissingInvoiceNumbers(List<OrderModel> orders) {
+    for (final order in orders) {
+      if (order.invoiceNumber == null && !_pendingInvoiceIds.contains(order.id)) {
+        _pendingInvoiceIds.add(order.id);
+        _dataSource.assignInvoiceNumber(order.id).catchError(
+          (e) {
+            _pendingInvoiceIds.remove(order.id);
+            debugPrint('Invoice number assignment failed: $e');
+          },
+        );
+      }
+    }
   }
 
   Future<void> updateItemPricing(
