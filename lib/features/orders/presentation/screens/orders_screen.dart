@@ -62,23 +62,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
   }
 
-  void _showPricingDialog(OrderModel order) {
-    bool hasDimensions = order.hasDimensions;
+  List<OrderModel> _enrichOrdersWithCategoryData(List<OrderModel> orders) {
     final categoryState = context.read<CategoryCubit>().state;
-    if (categoryState is CategoryLoaded) {
+    if (categoryState is! CategoryLoaded) return orders;
+
+    return orders.map((order) {
       final match = categoryState.categories
           .where((c) => c.name == order.categoryName)
           .firstOrNull;
-      if (match != null) hasDimensions = match.hasDimensions;
-    }
+      if (match == null) return order;
+      return order.copyWith(hasDimensions: match.hasDimensions);
+    }).toList();
+  }
 
+  void _showPricingDialog(OrderModel order) {
     showDialog(
       context: context,
       builder: (_) => BlocProvider.value(
         value: context.read<OrdersCubit>(),
         child: OrderPricingDialog(
           order: order,
-          hasDimensions: hasDimensions,
+          hasDimensions: order.hasDimensions,
         ),
       ),
     );
@@ -150,7 +154,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOrdersResult(List<OrderModel> orders) {
-    final filteredOrders = _filterOrders(orders);
+    final enrichedOrders = _enrichOrdersWithCategoryData(orders);
+    final filteredOrders = _filterOrders(enrichedOrders);
 
     if (filteredOrders.isEmpty) {
       return Center(
@@ -178,7 +183,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildGroupedOrders(List<OrderModel> orders) {
     _initializeexpandedDays(orders);
 
-    final grouped = OrdersGrouping.groupOrdersByDay(_filterOrders(orders));
+    final grouped = OrdersGrouping.groupOrdersByDay(orders);
     final days = grouped.keys.toList();
 
     return ListView.builder(
