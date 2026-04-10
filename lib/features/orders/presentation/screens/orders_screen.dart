@@ -26,9 +26,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   late final TextEditingController _searchController;
   late Set<DateTime> expandedDays;
   String _searchQuery = '';
-  String _lastSearchQuery = '';
-  List<OrderModel> _lastFilteredOrders = [];
-  Map<DateTime, List<OrderModel>>? _cachedGrouped;
 
   @override
   void initState() {
@@ -66,22 +63,23 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _showPricingDialog(OrderModel order) {
-    final catState = context.read<CategoryCubit>().state;
-    bool hasDimensions = true;
-    if (catState is CategoryLoaded) {
-      final category = catState.categories
+    bool hasDimensions = order.hasDimensions;
+    final categoryState = context.read<CategoryCubit>().state;
+    if (categoryState is CategoryLoaded) {
+      final match = categoryState.categories
           .where((c) => c.name == order.categoryName)
           .firstOrNull;
-      if (category != null) {
-        hasDimensions = category.hasDimensions;
-      }
+      if (match != null) hasDimensions = match.hasDimensions;
     }
 
     showDialog(
       context: context,
       builder: (_) => BlocProvider.value(
         value: context.read<OrdersCubit>(),
-        child: OrderPricingDialog(order: order, hasDimensions: hasDimensions),
+        child: OrderPricingDialog(
+          order: order,
+          hasDimensions: hasDimensions,
+        ),
       ),
     );
   }
@@ -180,14 +178,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildGroupedOrders(List<OrderModel> orders) {
     _initializeexpandedDays(orders);
 
-    // Memoize grouped orders: only recalculate if search query changed
-    if (_lastSearchQuery != _searchQuery) {
-      _lastSearchQuery = _searchQuery;
-      _lastFilteredOrders = _filterOrders(orders);
-      _cachedGrouped = OrdersGrouping.groupOrdersByDay(_lastFilteredOrders);
-    }
-
-    final grouped = _cachedGrouped!;
+    final grouped = OrdersGrouping.groupOrdersByDay(_filterOrders(orders));
     final days = grouped.keys.toList();
 
     return ListView.builder(
