@@ -70,10 +70,13 @@ class ItemPricingSectionState extends State<ItemPricingSection> {
   OrderItemModel buildItem() {
     final units = <ItemUnitModel>[];
     if (!_isDimensional) {
-      // Flat price: same price for all units
-      final price = double.tryParse(_controllers[0].price.text.trim());
+      // Flat price: distribute total price equally among units
+      final totalPrice = double.tryParse(_controllers[0].price.text.trim());
+      final unitPrice = totalPrice != null && widget.item.quantity > 0
+          ? totalPrice / widget.item.quantity
+          : null;
       for (var u = 0; u < widget.item.quantity; u++) {
-        units.add(ItemUnitModel(unitPrice: price));
+        units.add(ItemUnitModel(unitPrice: unitPrice));
       }
     } else {
       // Dimensional: per-unit width/height/price
@@ -166,7 +169,6 @@ class ItemPricingSectionState extends State<ItemPricingSection> {
   Widget _buildFlatPricing(TextTheme textTheme, ColorScheme colorScheme) {
     final c = _controllers[0];
     final price = double.tryParse(c.price.text.trim());
-    final total = price != null ? price * widget.item.quantity : null;
 
     return Column(
       children: [
@@ -175,7 +177,7 @@ class ItemPricingSectionState extends State<ItemPricingSection> {
             Expanded(
               child: PricingNumberField(
                 controller: c.price,
-                label: AppStrings.itemUnitPrice,
+                label: 'السعر الإجمالي',
                 suffix: AppStrings.currency,
                 validator: widget.validator,
                 onChanged: (_) => widget.onChanged(),
@@ -185,12 +187,12 @@ class ItemPricingSectionState extends State<ItemPricingSection> {
             SizedBox(
               width: 80,
               child: Text(
-                total != null
-                    ? '${total.toStringAsFixed(2)} ${AppStrings.currency}'
+                price != null
+                    ? '${price.toStringAsFixed(2)} ${AppStrings.currency}'
                     : '—',
                 style: textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: total != null ? colorScheme.primary : colorScheme.outline,
+                  color: price != null ? colorScheme.primary : colorScheme.outline,
                 ),
                 textAlign: TextAlign.center,
               ),

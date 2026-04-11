@@ -6,6 +6,7 @@ import '../../data/models/cashbox_expense_model.dart';
 import 'cashbox_sheet_row.dart';
 
 class CashboxCloseSheet extends StatefulWidget {
+  final double openingBalance;
   final double sessionRevenue;
   final double sessionExpenses;
   final List<CashboxExpenseModel> sessionExpenseEntries;
@@ -14,6 +15,7 @@ class CashboxCloseSheet extends StatefulWidget {
 
   const CashboxCloseSheet({
     super.key,
+    required this.openingBalance,
     required this.sessionRevenue,
     required this.sessionExpenses,
     required this.sessionExpenseEntries,
@@ -43,7 +45,7 @@ class _CashboxCloseSheetState extends State<CashboxCloseSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final netToday = widget.sessionRevenue - widget.sessionExpenses;
+    final netToday = widget.sessionBalance;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -70,6 +72,11 @@ class _CashboxCloseSheetState extends State<CashboxCloseSheet> {
           Text(AppStrings.cashboxClose, style: theme.textTheme.titleLarge),
           const Divider(height: 24),
           CashboxSheetRow(
+            label: AppStrings.cashboxOpeningBalance,
+            value: widget.openingBalance.toStringAsFixed(2),
+          ),
+          const SizedBox(height: 8),
+          CashboxSheetRow(
             label: AppStrings.cashboxSessionRevenue,
             value: widget.sessionRevenue.toStringAsFixed(2),
           ),
@@ -90,8 +97,14 @@ class _CashboxCloseSheetState extends State<CashboxCloseSheet> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('• ${e.title}', style: theme.textTheme.bodySmall),
-                            Text(e.amount.toStringAsFixed(2), style: theme.textTheme.bodySmall),
+                            Text(
+                              '• ${e.title}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            Text(
+                              e.amount.toStringAsFixed(2),
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                       ),

@@ -113,61 +113,129 @@ class OrdersCubit extends Cubit<OrdersState> {
     String id,
     OrderStatus status, {
     String? paymentMethod,
+    double? paidAmount,
+    bool? isFullyPaid,
   }) async {
     try {
-      await _dataSource.updateStatus(id, status, paymentMethod: paymentMethod);
+      await _dataSource.updateStatus(
+        id,
+        status,
+        paymentMethod: paymentMethod,
+        paidAmount: paidAmount,
+        isFullyPaid: isFullyPaid,
+      );
       if (status == OrderStatus.completed) {
-        OrderModel? order;
-        for (final currentOrder in _currentOrders) {
-          if (currentOrder.id == id) {
-            order = currentOrder;
-            break;
-          }
-        }
-
+        final order = _findOrder(id);
         if (order != null) {
-          try {
-            await _customersCubit.saveCustomerFromOrder(
-              orderId: order.id,
-              orderTotal: order.totalPrice ?? 0,
-              deliveryFee: order.deliveryFee,
-              itemCount: order.items.fold<int>(
-                0,
-                (count, item) => count + item.quantity,
-              ),
-              status: status.name,
-              orderDate: order.createdAt,
-              name: order.customerName,
-              phone: order.customerPhone,
-              address: order.address,
-            );
-          } catch (e) {
-            debugPrint('Customer sync failed for completed order $id: $e');
-          }
-
-          if (order.includeInCashbox && _cashboxDataSource != null) {
-            try {
-              await _cashboxDataSource.recordOrderIncome(
-                CashboxIncomeModel(
-                  orderId: order.id,
-                  orderTotal: order.totalPrice ?? 0,
-                  deliveryFee: order.deliveryFee,
-                  customerName: order.customerName,
-                  customerPhone: order.customerPhone,
-                  paymentMethod: paymentMethod ?? order.paymentMethod?.name,
-                  includeInCashbox: order.includeInCashbox,
-                  createdAt: order.createdAt,
-                ),
-              );
-            } catch (e) {
-              debugPrint('Cashbox sync failed for completed order $id: $e');
-            }
-          }
+          await _syncCustomer(order, status);
+          await _recordIncome(
+            order,
+            paymentMethod: paymentMethod,
+            paidAmount: paidAmount ?? order.totalPrice ?? 0,
+          );
         }
       }
     } catch (e) {
       emit(OrdersError(e.toString()));
       emit(OrdersLoaded(_currentOrders));
+    }
+  }
+
+  Future<void> recordRemainingPayment(
+    String orderId, {
+    required double amount,
+    required String paymentMethod,
+  }) async {
+    try {
+      await _dataSource.recordRemainingPayment(
+        orderId,
+        paidAmount: amount,
+        paymentMethod: paymentMethod,
+      );
+
+      final order = _findOrder(orderId);
+      if (order != null && order.includeInCashbox && _cashboxDataSource != null) {
+        try {
+          final total = order.totalPrice ?? 0;
+          final newPaid = order.paidAmount + amount;
+          final remaining = (total - newPaid).clamp(0, double.infinity).toDouble();
+
+          await _cashboxDataSource.recordOrderIncome(
+            CashboxIncomeModel(
+              orderId: '${order.id}_remaining',
+              orderTotal: amount,
+              deliveryFee: 0,
+              customerName: order.customerName,
+              customerPhone: order.customerPhone,
+              paymentMethod: paymentMethod,
+              includeInCashbox: order.includeInCashbox,
+              remainingAmount: remaining,
+              createdAt: DateTime.now(),
+            ),
+          );
+        } catch (e) {
+          debugPrint('Cashbox sync failed for remaining payment $orderId: $e');
+        }
+      }
+    } catch (e) {
+      emit(OrdersError(e.toString()));
+      emit(OrdersLoaded(_currentOrders));
+    }
+  }
+
+  OrderModel? _findOrder(String id) {
+    for (final order in _currentOrders) {
+      if (order.id == id) return order;
+    }
+    return null;
+  }
+
+  Future<void> _syncCustomer(OrderModel order, OrderStatus status) async {
+    try {
+      await _customersCubit.saveCustomerFromOrder(
+        orderId: order.id,
+        orderTotal: order.totalPrice ?? 0,
+        deliveryFee: order.deliveryFee,
+        itemCount: order.items.fold<int>(
+          0,
+          (count, item) => count + item.quantity,
+        ),
+        status: status.name,
+        orderDate: order.createdAt,
+        name: order.customerName,
+        phone: order.customerPhone,
+        address: order.address,
+      );
+    } catch (e) {
+      debugPrint('Customer sync failed for completed order ${order.id}: $e');
+    }
+  }
+
+  Future<void> _recordIncome(
+    OrderModel order, {
+    required String? paymentMethod,
+    required double paidAmount,
+  }) async {
+    if (!order.includeInCashbox || _cashboxDataSource == null) return;
+    try {
+      final total = order.totalPrice ?? 0;
+      final remaining = (total - paidAmount).clamp(0, double.infinity).toDouble();
+      
+      await _cashboxDataSource.recordOrderIncome(
+        CashboxIncomeModel(
+          orderId: order.id,
+          orderTotal: paidAmount,
+          deliveryFee: order.deliveryFee,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          paymentMethod: paymentMethod ?? order.paymentMethod?.name,
+          includeInCashbox: order.includeInCashbox,
+          remainingAmount: remaining,
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Cashbox sync failed for completed order ${order.id}: $e');
     }
   }
 

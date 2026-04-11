@@ -11,6 +11,7 @@ class OrderListItem extends StatelessWidget {
   final VoidCallback onOpenPricing;
   final Future<void> Function() onSendInvoice;
   final ValueChanged<OrderStatus> onStatusChanged;
+  final VoidCallback? onPayRemaining;
 
   const OrderListItem({
     super.key,
@@ -18,6 +19,7 @@ class OrderListItem extends StatelessWidget {
     required this.onOpenPricing,
     required this.onSendInvoice,
     required this.onStatusChanged,
+    this.onPayRemaining,
   });
 
   @override
@@ -29,7 +31,11 @@ class OrderListItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            OrderListItemHeader(order: order, onStatusChanged: onStatusChanged),
+            OrderListItemHeader(
+              order: order,
+              onStatusChanged: onStatusChanged,
+              onPayRemaining: onPayRemaining,
+            ),
             const SizedBox(height: 8),
             const Divider(height: 1),
             const SizedBox(height: 8),

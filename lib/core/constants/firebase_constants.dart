@@ -1,6 +1,8 @@
 class FirebaseConstants {
   static const String carsCollection = 'cars';
   static const String customersCollection = 'customers';
+  static const String employeesCollection = 'employees';
+  static const String employeeAdvancesCollection = 'advances';
   static const String ordersCollection = 'orders';
   static const String countersCollection = 'counters';
   static const String categoriesCollection = 'categories';
@@ -8,4 +10,5 @@ class FirebaseConstants {
   static const String cashboxIncomeCollection = 'cashbox_income';
   static const String cashboxExpensesCollection = 'cashbox_expenses';
   static const String cashboxClosuresCollection = 'cashbox_closures';
+  static const String cashboxAuditLogsCollection = 'cashbox_audit_logs';
 }

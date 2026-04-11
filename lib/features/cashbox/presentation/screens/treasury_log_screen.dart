@@ -2,26 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
+import 'package:diamond_clean/core/models/treasury_log_entry.dart';
 import 'package:diamond_clean/core/widgets/custom_card.dart';
 import 'package:diamond_clean/core/widgets/state_widgets.dart';
 
 import '../../cubit/cashbox_cubit.dart';
 import '../../cubit/cashbox_state.dart';
 
-class TreasuryLogScreen extends StatefulWidget {
+class TreasuryLogScreen extends StatelessWidget {
   const TreasuryLogScreen({super.key});
 
-  @override
-  State<TreasuryLogScreen> createState() => _TreasuryLogScreenState();
-}
-
-class _TreasuryLogScreenState extends State<TreasuryLogScreen> {
-  DateTimeRange? _dateRange;
-
-  List<CashboxTreasuryLogEntry> _filterEntries(
-    List<CashboxTreasuryLogEntry> entries,
+  static List<TreasuryLogEntry> _filterEntries(
+    List<TreasuryLogEntry> entries,
+    DateTimeRange? dateRange,
   ) {
-    final dateRange = _dateRange;
     if (dateRange == null) {
       return entries;
     }
@@ -36,7 +30,32 @@ class _TreasuryLogScreenState extends State<TreasuryLogScreen> {
         .toList();
   }
 
+  static String _formatDateTime(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$day/$month/${date.year} $hour:$minute';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _TreasuryLogContent();
+  }
+}
+
+class _TreasuryLogContent extends StatefulWidget {
+  const _TreasuryLogContent();
+
+  @override
+  State<_TreasuryLogContent> createState() => _TreasuryLogContentState();
+}
+
+class _TreasuryLogContentState extends State<_TreasuryLogContent> {
+  DateTimeRange? _dateRange;
+
   Future<void> _pickDateRange() async {
+    if (!mounted) return;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -48,23 +67,14 @@ class _TreasuryLogScreenState extends State<TreasuryLogScreen> {
     }
   }
 
-  String _formatDateTime(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/${date.year} $hour:$minute';
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CashboxCubit, CashboxState>(
       builder: (context, state) {
         final entries = switch (state) {
-          CashboxLoaded(:final treasuryLogEntries) => _filterEntries(
-            treasuryLogEntries,
-          ),
-          _ => const <CashboxTreasuryLogEntry>[],
+          CashboxLoaded(:final treasuryLogEntries) =>
+            TreasuryLogScreen._filterEntries(treasuryLogEntries, _dateRange),
+          _ => const <TreasuryLogEntry>[],
         };
 
         return Scaffold(
@@ -110,7 +120,9 @@ class _TreasuryLogScreenState extends State<TreasuryLogScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      _formatDateTime(entry.dateTime),
+                                      TreasuryLogScreen._formatDateTime(
+                                        entry.dateTime,
+                                      ),
                                       style: theme.textTheme.bodySmall,
                                     ),
                                   ],
@@ -129,11 +141,44 @@ class _TreasuryLogScreenState extends State<TreasuryLogScreen> {
                                 ),
                               ),
                               Expanded(
-                                child: Text(
-                                  entry.note,
-                                  style: theme.textTheme.bodySmall,
-                                  textAlign: TextAlign.end,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      entry.note,
+                                      style: theme.textTheme.bodySmall,
+                                      textAlign: TextAlign.end,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (entry.paymentMethod != null &&
+                                        entry.paymentMethod!.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme
+                                              .colorScheme
+                                              .primaryContainer,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          entry.paymentMethod!,
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ],

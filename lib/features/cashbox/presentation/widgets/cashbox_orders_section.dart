@@ -60,7 +60,7 @@ class CashboxOrdersSection extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(income.customerName),
                     subtitle: Text(
-                      '${income.customerPhone} • ${formatDate(income.createdAt)} • ${AppStrings.cashboxPaymentMethod}: ${_paymentMethodLabel(income.paymentMethod)}',
+                      '${income.customerPhone} • ${formatDate(income.createdAt)} • ${AppStrings.cashboxPaymentMethod}: ${_paymentMethodLabel(income.paymentMethod)}${income.remainingAmount > 0 ? " • ${AppStrings.cashboxRemainingAmount}: ${income.remainingAmount.toStringAsFixed(2)}" : ""}',
                     ),
                     trailing: Text(income.orderTotal.toStringAsFixed(2)),
                   ),

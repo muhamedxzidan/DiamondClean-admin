@@ -1,4 +1,6 @@
 import 'package:diamond_clean/core/constants/app_strings.dart';
+import 'package:diamond_clean/core/models/treasury_log_entry.dart';
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_audit_log_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
@@ -32,6 +34,9 @@ class CashboxLoaded extends CashboxState {
   final List<CashboxExpenseModel> dailyExpenses;
   final List<CashboxClosureModel> dailyClosures;
 
+  /// Audit log for all operations.
+  final List<CashboxAuditLogModel> auditLogs;
+
   const CashboxLoaded({
     required this.selectedDay,
     required this.settings,
@@ -43,26 +48,35 @@ class CashboxLoaded extends CashboxState {
     required this.dailyIncomeEntries,
     required this.dailyExpenses,
     required this.dailyClosures,
+    this.auditLogs = const [],
   });
 
-  List<CashboxTreasuryLogEntry> get treasuryLogEntries {
-    final entries = <CashboxTreasuryLogEntry>[];
+  List<TreasuryLogEntry> get treasuryLogEntries {
+    final entries = <TreasuryLogEntry>[];
 
     for (final income in dailyIncomeEntries) {
+      String type = AppStrings.cashboxEventOrderFullPayment;
+      if (income.orderId.endsWith('_remaining')) {
+        type = AppStrings.cashboxEventOrderRemainingPayment;
+      } else if (income.remainingAmount > 0) {
+        type = AppStrings.cashboxEventOrderPartialPayment;
+      }
+
       entries.add(
-        CashboxTreasuryLogEntry(
-          type: AppStrings.cashboxEventOrderIncome,
+        TreasuryLogEntry(
+          type: type,
           dateTime: income.createdAt,
           amount: income.orderTotal,
           note: income.customerName,
+          paymentMethod: income.paymentMethod,
         ),
       );
     }
 
     for (final expense in dailyExpenses) {
       entries.add(
-        CashboxTreasuryLogEntry(
-          type: AppStrings.cashboxEventExpense,
+        TreasuryLogEntry(
+          type: expense.category.label,
           dateTime: expense.createdAt,
           amount: -expense.amount,
           note: expense.title,
@@ -72,7 +86,7 @@ class CashboxLoaded extends CashboxState {
 
     for (final closure in dailyClosures) {
       entries.add(
-        CashboxTreasuryLogEntry(
+        TreasuryLogEntry(
           type: AppStrings.cashboxEventClosure,
           dateTime: closure.closedAt,
           amount: closure.closingBalance,
@@ -84,20 +98,6 @@ class CashboxLoaded extends CashboxState {
     entries.sort((left, right) => right.dateTime.compareTo(left.dateTime));
     return entries;
   }
-}
-
-class CashboxTreasuryLogEntry {
-  final String type;
-  final DateTime dateTime;
-  final double amount;
-  final String note;
-
-  const CashboxTreasuryLogEntry({
-    required this.type,
-    required this.dateTime,
-    required this.amount,
-    required this.note,
-  });
 }
 
 class CashboxError extends CashboxState {

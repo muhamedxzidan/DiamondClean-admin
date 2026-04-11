@@ -2,20 +2,26 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 
+import 'package:diamond_clean/core/utils/cashbox_validator.dart';
+
 import '../data/datasources/cashbox_remote_data_source.dart';
+import '../data/models/cashbox_audit_log_model.dart';
 import '../data/models/cashbox_closure_model.dart';
 import '../data/models/cashbox_expense_model.dart';
 import '../data/models/cashbox_income_model.dart';
 import '../data/models/cashbox_settings_model.dart';
+import '../data/models/expense_category.dart';
 import 'cashbox_state.dart';
 
 class CashboxCubit extends Cubit<CashboxState> {
   final CashboxRemoteDataSource _dataSource;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
+  bool _isListening = false;
 
   List<CashboxIncomeModel> _incomeEntries = [];
   List<CashboxExpenseModel> _expenses = [];
   List<CashboxClosureModel> _closures = [];
+  List<CashboxAuditLogModel> _auditLogs = [];
   CashboxSettingsModel _settings = CashboxSettingsModel.initial();
   DateTime _selectedDay = _todayStart();
 
@@ -26,7 +32,11 @@ class CashboxCubit extends Cubit<CashboxState> {
     return DateTime(now.year, now.month, now.day);
   }
 
-  void listen() {
+  void listen({bool restart = false}) {
+    if (_isListening && !restart) {
+      return;
+    }
+
     emit(const CashboxLoading());
     _cancelSubscriptions();
 
@@ -34,6 +44,8 @@ class CashboxCubit extends Cubit<CashboxState> {
     _subscribeToStream(_dataSource.watchIncomeEntries(), _updateIncomeEntries);
     _subscribeToStream(_dataSource.watchExpenses(), _updateExpenses);
     _subscribeToStream(_dataSource.watchClosures(), _updateClosures);
+    _subscribeToStream(_dataSource.watchAuditLogs(), _updateAuditLogs);
+    _isListening = true;
   }
 
   StreamSubscription<T> _subscribeToStream<T>(
@@ -62,10 +74,51 @@ class CashboxCubit extends Cubit<CashboxState> {
     double openingBalance,
     String openedBy,
   ) async {
-    await _performMutation(() {
-      return _dataSource.saveOpeningBalance(
+    // Validate inputs
+    final amountValidation = CashboxValidator.validateOpeningBalance(
+      openingBalance,
+    );
+    if (amountValidation is CashboxValidationFailure) {
+      await _logAuditEvent(
+        eventType: AuditEventType.validationFailed,
+        operationId: 'opening_balance',
+        performedBy: openedBy,
+        amount: openingBalance,
+        description: 'Failed: ${amountValidation.reason}',
+        isValid: false,
+        validationError: amountValidation.reason,
+      );
+      throw Exception(amountValidation.reason);
+    }
+
+    final userValidation = CashboxValidator.validateUserName(openedBy);
+    if (userValidation is CashboxValidationFailure) {
+      await _logAuditEvent(
+        eventType: AuditEventType.validationFailed,
+        operationId: 'opening_balance',
+        performedBy: openedBy,
+        amount: openingBalance,
+        description: 'Failed: ${userValidation.reason}',
+        isValid: false,
+        validationError: userValidation.reason,
+      );
+      throw Exception(userValidation.reason);
+    }
+
+    await _performMutation(() async {
+      await _dataSource.saveOpeningBalance(
         openingBalance: openingBalance,
         openedBy: openedBy,
+      );
+
+      // Log successful operation
+      await _logAuditEvent(
+        eventType: AuditEventType.openingBalanceSet,
+        operationId: 'opening_balance_${DateTime.now().microsecondsSinceEpoch}',
+        performedBy: openedBy,
+        amount: openingBalance,
+        description: 'Opened cashbox with balance',
+        isValid: true,
       );
     });
   }
@@ -73,18 +126,50 @@ class CashboxCubit extends Cubit<CashboxState> {
   Future<void> addExpense({
     required String title,
     required double amount,
+    ExpenseCategory category = ExpenseCategory.other,
     String? createdBy,
   }) async {
+    // Validate inputs
+    final validation = CashboxValidator.validateExpense(
+      amount: amount,
+      title: title,
+    );
+    if (validation is CashboxValidationFailure) {
+      await _logAuditEvent(
+        eventType: AuditEventType.validationFailed,
+        operationId: 'expense_add',
+        performedBy: createdBy ?? 'System',
+        amount: amount,
+        description: 'Failed: ${validation.reason}',
+        isValid: false,
+        validationError: validation.reason,
+      );
+      throw Exception(validation.reason);
+    }
+
     await _performMutation(() async {
       final now = DateTime.now();
+      final expenseId = now.microsecondsSinceEpoch.toString();
       final expense = CashboxExpenseModel(
-        id: now.microsecondsSinceEpoch.toString(),
+        id: expenseId,
         title: title,
         amount: amount,
+        category: category,
         createdBy: createdBy,
         createdAt: now,
       );
       await _dataSource.addExpense(expense);
+
+      // Log successful operation
+      await _logAuditEvent(
+        eventType: AuditEventType.expenseAdded,
+        operationId: expenseId,
+        performedBy: createdBy ?? 'System',
+        amount: amount,
+        description: 'Added expense: $title',
+        metadata: {'category': category.value, 'title': title},
+        isValid: true,
+      );
     });
   }
 
@@ -95,8 +180,34 @@ class CashboxCubit extends Cubit<CashboxState> {
   }
 
   Future<void> deleteExpense(String expenseId) async {
-    await _performMutation(() {
-      return _dataSource.deleteExpense(expenseId);
+    await _performMutation(() async {
+      // Find the expense to log it
+      final expense = _expenses.firstWhere(
+        (e) => e.id == expenseId,
+        orElse: () => CashboxExpenseModel(
+          id: expenseId,
+          title: 'Unknown',
+          amount: 0,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await _dataSource.deleteExpense(expenseId);
+
+      // Log deletion
+      await _logAuditEvent(
+        eventType: AuditEventType.expenseDeleted,
+        operationId: expenseId,
+        performedBy: 'System',
+        amount: expense.amount,
+        description: 'Deleted expense: ${expense.title}',
+        metadata: {
+          'original_title': expense.title,
+          'original_amount': expense.amount,
+          'original_category': expense.category.value,
+        },
+        isValid: true,
+      );
     });
   }
 
@@ -107,8 +218,34 @@ class CashboxCubit extends Cubit<CashboxState> {
   }
 
   Future<void> closeCashbox(String closedBy) async {
+    // Validate user name
+    final userValidation = CashboxValidator.validateUserName(closedBy);
+    if (userValidation is CashboxValidationFailure) {
+      throw Exception(userValidation.reason);
+    }
+
     await _performMutation(() async {
       final sessionSummary = _sessionSummary();
+
+      // Validate closing balance
+      final balanceValidation = CashboxValidator.validateClosingBalance(
+        _settings.openingBalance,
+        sessionSummary.revenue,
+        sessionSummary.expensesTotal,
+      );
+      if (balanceValidation is CashboxValidationFailure) {
+        await _logAuditEvent(
+          eventType: AuditEventType.validationFailed,
+          operationId: 'cashbox_close',
+          performedBy: closedBy,
+          amount: sessionSummary.balance,
+          description: 'Failed: ${balanceValidation.reason}',
+          isValid: false,
+          validationError: balanceValidation.reason,
+        );
+        throw Exception(balanceValidation.reason);
+      }
+
       await _dataSource.closeCashbox(
         closedBy: closedBy,
         openingBalance: _settings.openingBalance,
@@ -117,6 +254,23 @@ class CashboxCubit extends Cubit<CashboxState> {
         closingBalance: sessionSummary.balance,
         ordersCount: sessionSummary.incomeEntries.length,
         expenses: sessionSummary.expenseEntries,
+      );
+
+      // Log successful closure
+      await _logAuditEvent(
+        eventType: AuditEventType.cashboxClosed,
+        operationId: 'cashbox_close_${DateTime.now().microsecondsSinceEpoch}',
+        performedBy: closedBy,
+        amount: sessionSummary.balance,
+        description: 'Closed cashbox',
+        metadata: {
+          'opening_balance': _settings.openingBalance,
+          'total_revenue': sessionSummary.revenue,
+          'total_expenses': sessionSummary.expensesTotal,
+          'closing_balance': sessionSummary.balance,
+          'orders_count': sessionSummary.incomeEntries.length,
+        },
+        isValid: true,
       );
     });
   }
@@ -156,6 +310,10 @@ class CashboxCubit extends Cubit<CashboxState> {
     _closures = closures;
   }
 
+  void _updateAuditLogs(List<CashboxAuditLogModel> logs) {
+    _auditLogs = logs;
+  }
+
   Future<void> _performMutation(Future<void> Function() action) async {
     try {
       await action();
@@ -178,10 +336,11 @@ class CashboxCubit extends Cubit<CashboxState> {
     }
 
     emit(CashboxError(error.toString()));
-    _rebuild();
   }
 
   void _cancelSubscriptions() {
+    _isListening = false;
+
     final subscriptions = List<StreamSubscription<dynamic>>.from(
       _subscriptions,
     );
@@ -261,8 +420,40 @@ class CashboxCubit extends Cubit<CashboxState> {
         dailyIncomeEntries: _dailyIncomeEntries(),
         dailyExpenses: _dailyExpenses(),
         dailyClosures: _dailyClosures(),
+        auditLogs: _auditLogs,
       ),
     );
+  }
+
+  Future<void> _logAuditEvent({
+    required AuditEventType eventType,
+    required String operationId,
+    required String performedBy,
+    required double amount,
+    String? description,
+    Map<String, dynamic>? metadata,
+    required bool isValid,
+    String? validationError,
+  }) async {
+    try {
+      final auditLog = CashboxAuditLogModel(
+        id: '${DateTime.now().microsecondsSinceEpoch}_$operationId',
+        eventType: eventType,
+        operationId: operationId,
+        performedBy: performedBy,
+        amount: amount,
+        description: description,
+        metadata: metadata,
+        isValid: isValid,
+        validationError: validationError,
+        createdAt: DateTime.now(),
+      );
+
+      await _dataSource.logAuditEvent(auditLog);
+    } catch (e) {
+      // Log audit failures don't stop operations, but we track them
+      // Don't emit error state for audit log failures - just silently log
+    }
   }
 
   @override

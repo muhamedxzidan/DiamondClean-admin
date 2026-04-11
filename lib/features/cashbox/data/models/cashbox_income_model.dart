@@ -8,6 +8,7 @@ class CashboxIncomeModel {
   final String customerPhone;
   final String? paymentMethod;
   final bool includeInCashbox;
+  final double remainingAmount;
   final DateTime createdAt;
 
   const CashboxIncomeModel({
@@ -18,6 +19,7 @@ class CashboxIncomeModel {
     required this.customerPhone,
     this.paymentMethod,
     required this.includeInCashbox,
+    this.remainingAmount = 0,
     required this.createdAt,
   });
 
@@ -31,6 +33,7 @@ class CashboxIncomeModel {
       customerPhone: data['customerPhone'] as String? ?? '',
       paymentMethod: data['paymentMethod'] as String?,
       includeInCashbox: data['includeInCashbox'] as bool? ?? true,
+      remainingAmount: (data['remainingAmount'] as num?)?.toDouble() ?? 0,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -44,6 +47,7 @@ class CashboxIncomeModel {
     'customerPhone': customerPhone,
     if (paymentMethod != null) 'paymentMethod': paymentMethod,
     'includeInCashbox': includeInCashbox,
+    'remainingAmount': remainingAmount,
     'createdAt': Timestamp.fromDate(createdAt),
   };
 }

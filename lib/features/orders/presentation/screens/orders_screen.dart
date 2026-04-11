@@ -7,11 +7,13 @@ import '../../core/orders_grouping.dart';
 import '../../cubit/orders_cubit.dart';
 import '../../cubit/orders_state.dart';
 import '../../data/models/order_model.dart';
+import '../widgets/completion_payment_dialog.dart';
 import '../widgets/order_pricing_dialog.dart';
 import '../widgets/orders_day_group.dart';
 import '../widgets/orders_error_view.dart';
 import '../widgets/orders_search_bar.dart';
-import '../widgets/payment_method_dialog.dart';
+import '../widgets/orders_status_filter.dart';
+import '../widgets/remaining_payment_dialog.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -24,6 +26,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   late final TextEditingController _searchController;
   late Set<DateTime> expandedDays;
   String _searchQuery = '';
+  OrderFilterMode _selectedFilter = OrderFilterMode.all;
 
   @override
   void initState() {
@@ -86,10 +89,50 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  Future<OrderPaymentMethod?> _showPaymentMethodDialog() async {
-    return showDialog<OrderPaymentMethod>(
-      context: context,
-      builder: (_) => const PaymentMethodDialog(),
+  Future<void> _handleStatusChange(OrderModel order, OrderStatus status) async {
+    if (status == OrderStatus.completed) {
+      final totalPrice = order.totalPrice;
+      if (totalPrice == null || totalPrice <= 0) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(AppStrings.notPricedYet),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      final result = await showCompletionPaymentDialog(
+        context,
+        totalPrice: totalPrice,
+      );
+      if (result == null || !mounted) return;
+
+      await context.read<OrdersCubit>().updateStatus(
+        order.id,
+        status,
+        paymentMethod: result.paymentMethod.name,
+        paidAmount: result.paidAmount,
+        isFullyPaid: result.isFullPayment,
+      );
+      return;
+    }
+
+    await context.read<OrdersCubit>().updateStatus(order.id, status);
+  }
+
+  Future<void> _handlePayRemaining(OrderModel order) async {
+    final result = await showRemainingPaymentDialog(
+      context,
+      remainingAmount: order.remainingAmount,
+    );
+    if (result == null || !mounted) return;
+
+    await context.read<OrdersCubit>().recordRemainingPayment(
+      order.id,
+      amount: result.amount,
+      paymentMethod: result.paymentMethod.name,
     );
   }
 
@@ -106,6 +149,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
             },
             searchQuery: _searchQuery,
           ),
+          OrdersStatusFilter(
+            selectedFilter: _selectedFilter,
+            onChanged: (filter) {
+              setState(() => _selectedFilter = filter);
+            },
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: BlocConsumer<OrdersCubit, OrdersState>(
               listener: (context, state) {
@@ -141,9 +191,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (filteredOrders.isEmpty) {
       return Center(
         child: Text(
-          _searchQuery.isEmpty
-              ? AppStrings.noOrdersFound
-              : AppStrings.noMatchingOrders,
+          _hasActiveFilters
+              ? AppStrings.noMatchingOrders
+              : AppStrings.noOrdersFound,
         ),
       );
     }
@@ -152,12 +202,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   List<OrderModel> _filterOrders(List<OrderModel> orders) {
-    if (_searchQuery.isEmpty) return orders;
-
     return orders.where((order) {
-      return _matches(order.customerCode) || _matches(order.customerPhone);
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          _matches(order.customerCode) ||
+          _matches(order.customerPhone);
+      final matchesFilter =
+          OrdersStatusFilter.matchesFilter(order, _selectedFilter);
+      return matchesSearch && matchesFilter;
     }).toList();
   }
+
+  bool get _hasActiveFilters =>
+      _searchQuery.isNotEmpty || _selectedFilter != OrderFilterMode.all;
 
   bool _matches(String value) => value.toLowerCase().contains(_searchQuery);
 
@@ -182,21 +239,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           onToggleExpansion: () => _toggleDayExpansion(day),
           onOpenPricing: _showPricingDialog,
           onSendInvoice: _sendInvoice,
-          onStatusChanged: (order, status) async {
-            if (status == OrderStatus.completed) {
-              final paymentMethod = await _showPaymentMethodDialog();
-              if (paymentMethod == null) return;
-              // ignore: use_build_context_synchronously
-              await context.read<OrdersCubit>().updateStatus(
-                order.id,
-                status,
-                paymentMethod: paymentMethod.name,
-              );
-              return;
-            }
-
-            await context.read<OrdersCubit>().updateStatus(order.id, status);
-          },
+          onStatusChanged: _handleStatusChange,
+          onPayRemaining: _handlePayRemaining,
           showSpacing: dayIndex < days.length - 1,
         );
       },

@@ -74,6 +74,10 @@ class _CashboxPinOverlayState extends State<CashboxPinOverlay> {
                   obscureText: true,
                   maxLength: 4,
                   autofocus: true,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  enableIMEPersonalizedLearning: false,
+                  autofillHints: const <String>[],
                   textAlign: TextAlign.center,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(

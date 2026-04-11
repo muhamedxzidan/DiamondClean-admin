@@ -19,6 +19,13 @@ abstract class OrdersRemoteDataSource {
     String id,
     OrderStatus status, {
     String? paymentMethod,
+    double? paidAmount,
+    bool? isFullyPaid,
+  });
+  Future<void> recordRemainingPayment(
+    String orderId, {
+    required double paidAmount,
+    required String paymentMethod,
   });
   Future<void> assignInvoiceNumber(String orderId);
 }

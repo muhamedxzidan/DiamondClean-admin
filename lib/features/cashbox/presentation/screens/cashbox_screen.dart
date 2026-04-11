@@ -26,12 +26,6 @@ class CashboxScreen extends StatefulWidget {
 class _CashboxScreenState extends State<CashboxScreen> {
   bool _isUnlocked = false;
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<CashboxCubit>().listen();
-  }
-
   Future<void> _pickDay() async {
     final state = context.read<CashboxCubit>().state;
     final selectedDay = state is CashboxLoaded
@@ -56,6 +50,7 @@ class _CashboxScreenState extends State<CashboxScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) => CashboxCloseSheet(
+        openingBalance: state.settings.openingBalance,
         sessionRevenue: state.sessionRevenue,
         sessionExpenses: state.sessionExpenses,
         sessionExpenseEntries: state.sessionExpenseEntries,

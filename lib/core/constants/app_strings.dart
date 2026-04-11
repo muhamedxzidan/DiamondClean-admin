@@ -17,7 +17,54 @@ class AppStrings {
   static const String cars = 'السيارات';
   static const String orders = 'الطلبات';
   static const String customers = 'العملاء';
+  static const String employees = 'الموظفون';
   static const String cashbox = 'الخزنة';
+
+  // Employees
+  static const String employeesTitle = 'الموظفون';
+  static const String employeesSearchHint = 'ابحث باسم الموظف أو رقم الهاتف';
+  static const String employeesEmpty = 'لا يوجد موظفون مضافون حتى الآن';
+  static const String employeesAddEmployee = 'إضافة موظف';
+  static const String employeesName = 'اسم الموظف';
+  static const String employeesNationalId = 'الرقم القومي (اختياري)';
+  static const String employeesCity = 'المدينة (اختياري)';
+  static const String employeesSalaryCycle = 'دورة الراتب';
+  static const String employeesSalaryAmount = 'قيمة الراتب';
+  static const String employeesSalaryValidation = 'أدخل قيمة راتب صحيحة';
+  static const String employeesSaved = 'تم حفظ بيانات الموظف';
+  static const String employeesRemaining = 'المتبقي';
+  static const String employeesAdvancesTotal = 'إجمالي السلف بالدورة';
+  static const String employeesAdvancesCount = 'عدد مرات السلف';
+  static const String employeesAddAdvance = 'إضافة سلفة';
+  static const String employeesAdvanceAmount = 'قيمة السلفة';
+  static const String employeesAdvanceValidation = 'أدخل قيمة سلفة صحيحة';
+  static const String employeesAdvanceNote = 'ملاحظة';
+  static const String employeesAdvanceAdded = 'تم تسجيل السلفة';
+  static const String employeesAdvanceHistory = 'سجل السلف';
+  static const String employeesNoAdvances = 'لا توجد سلف لهذا الموظف';
+  static const String employeesNoNote = 'بدون ملاحظة';
+  static const String employeesWarningTitle = 'تحذير';
+  static const String employeesAmountExceedsRemaining =
+      'المبلغ أكبر من المتبقي';
+  static const String employeesPaySalary = 'قبض';
+  static const String employeesPaidTotal = 'إجمالي المقبوض بالدورة';
+  static const String employeesSalaryOutstanding = 'المتبقي للقبض';
+  static const String employeesPayoutAdded = 'تم تسجيل القبض';
+  static const String employeesPayoutMode = 'نوع القبض';
+  static const String employeesPayoutFull = 'قبض كامل المتبقي';
+  static const String employeesPayoutPartial = 'قبض جزء';
+  static const String employeesPayoutAmount = 'مبلغ القبض';
+  static const String employeesPayoutAmountValidation = 'أدخل مبلغ قبض صحيح';
+  static const String employeesPayoutNote = 'ملاحظة قبض (اختياري)';
+
+  static String employeesAdvanceRejected(double requested, double remaining) =>
+      'السلفة (${requested.toStringAsFixed(2)} ج.م) أكبر من المتبقي (${remaining.toStringAsFixed(2)} ج.م)';
+
+  static String employeesSalaryPayoutRejected(
+    double requested,
+    double remaining,
+  ) =>
+      'مبلغ القبض (${requested.toStringAsFixed(2)} ج.م) أكبر من المتبقي (${remaining.toStringAsFixed(2)} ج.م)';
 
   // Categories
   static const String categoriesTitle = 'الأصناف';
@@ -61,6 +108,7 @@ class AppStrings {
   static const String statusConfirmed = 'تم الغسيل';
   static const String statusCompleted = 'تم التسليم';
   static const String statusCancelled = 'ملغي';
+  static const String statusAll = 'الكل';
   static const String updateStatus = 'تحديث الحالة';
   static const String paymentMethodTitle = 'طريقة السداد';
   static const String paymentMethodCash = 'نقدي';
@@ -90,6 +138,22 @@ class AppStrings {
   static const String quickPrint = 'طباعة سريعة';
   static const String sendWhatsapp = 'إرسال فاتورة';
   static const String whatsappNoPhone = 'لا يوجد رقم هاتف للعميل';
+
+  // Partial Payment
+  static const String paymentTypeFull = 'دفع كامل';
+  static const String paymentTypePartial = 'دفع جزئي';
+  static const String paymentTypeLabel = 'نوع الدفع';
+  static const String paidAmountLabel = 'المبلغ المدفوع';
+  static const String paidAmountHint = 'أدخل المبلغ المدفوع';
+  static const String remainingAmountLabel = 'المتبقي';
+  static const String payRemaining = 'سداد المتبقي';
+  static const String orderFullyPaid = 'تم السداد الكامل';
+  static const String orderPartiallyPaid = 'دفع جزئي';
+  static const String outstandingOrders = 'عليها متبقي';
+  static const String confirmRemainingPayment = 'تأكيد سداد المتبقي';
+  static const String paidLabel = 'المدفوع';
+  static const String invalidPaidAmount = 'المبلغ المدفوع غير صحيح';
+  static const String paidAmountExceedsTotal = 'المبلغ المدفوع أكبر من الإجمالي';
 
   // Cashbox
   static const String cashboxTitle = 'الخزنة';
@@ -130,6 +194,9 @@ class AppStrings {
   static const String cashboxEventAmount = 'المبلغ';
   static const String cashboxEventNote = 'ملاحظة';
   static const String cashboxEventOrderIncome = 'إيراد أوردر';
+  static const String cashboxEventOrderFullPayment = 'سداد أوردر كامل';
+  static const String cashboxEventOrderPartialPayment = 'دفعة مبدئية لأوردر';
+  static const String cashboxEventOrderRemainingPayment = 'سداد متبقي أوردر';
   static const String cashboxEventExpense = 'مصروف';
   static const String cashboxEventClosure = 'إقفال';
   static const String cashboxNoLogEntries = 'لا توجد حركات مسجلة';
@@ -141,6 +208,8 @@ class AppStrings {
   static const String cashboxClosureTotalExpenses = 'إجمالي المصروفات';
   static const String cashboxClosureOrdersCount = 'عدد الأوردرات';
   static const String cashboxClosureExpensesBreakdown = 'تفصيل المصروفات';
+  static const String cashboxRemainingAmount = 'الباقي';
+  static const String cashboxPartialPayment = 'دفع جزئي';
 
   // Developer
   static const String developerTitle = 'عن المبرمج';
@@ -180,6 +249,38 @@ class AppStrings {
   static const String confirmDeleteMessage =
       'هل أنت متأكد من الحذف؟ لا يمكن التراجع عن هذا الإجراء.';
   static const String fieldRequired = 'هذا الحقل مطلوب';
+
+  // Expense Category
+  static const String cashboxExpenseCategory = 'نوع المصروف';
+
+  // Treasury Report
+  static const String treasuryReportTitle = 'تقرير الخزنة';
+  static const String treasuryReportSelectPeriod = 'اختر فترة زمنية';
+  static const String treasuryReportToday = 'اليوم';
+  static const String treasuryReportWeek = 'الأسبوع';
+  static const String treasuryReportMonth = 'الشهر';
+  static const String treasuryReportThreeMonths = '3 شهور';
+  static const String treasuryReportCustom = 'مخصص';
+  static const String treasuryReportCashSummary = 'ملخص الخزنة';
+  static const String treasuryReportOpeningBalance = 'رصيد الافتتاح';
+  static const String treasuryReportTotalIncome = 'إجمالي الداخل';
+  static const String treasuryReportTotalOutgoing = 'إجمالي الخارج';
+  static const String treasuryReportClosingBalance = 'رصيد الإغلاق';
+  static const String treasuryReportRevenue = 'الإيرادات';
+  static const String treasuryReportOrdersRevenue = 'دخل الأوردرات المسلّمة';
+  static const String treasuryReportDeliveryFees = 'رسوم التوصيل';
+  static const String treasuryReportCashPayments = 'مدفوعات نقدية';
+  static const String treasuryReportElectronicPayments = 'مدفوعات إلكترونية';
+  static const String treasuryReportExpenses = 'المصاريف';
+  static const String treasuryReportExpensesByCategory = 'تفصيل المصاريف';
+  static const String treasuryReportOrders = 'الأوردرات';
+  static const String treasuryReportCompleted = 'مسلّمة';
+  static const String treasuryReportPending = 'في الانتظار';
+  static const String treasuryReportConfirmed = 'تم الغسيل';
+  static const String treasuryReportCancelled = 'ملغية';
+  static const String treasuryReportProfitLoss = 'الربح والخسارة';
+  static const String treasuryReportNetProfit = 'صافي الربح';
+  static const String treasuryReportPendingValue = 'قيمة الأوردرات المعلّقة';
 
   // Cashbox PIN
   static const String cashboxPinLocked = 'الخزنة محمية';

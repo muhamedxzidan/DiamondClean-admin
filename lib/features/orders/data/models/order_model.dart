@@ -23,6 +23,8 @@ class OrderModel {
   final OrderPaymentMethod? paymentMethod;
   final int? invoiceNumber;
   final bool hasDimensions;
+  final double paidAmount;
+  final bool isFullyPaid;
   final DateTime createdAt;
 
   const OrderModel({
@@ -42,6 +44,8 @@ class OrderModel {
     this.paymentMethod,
     this.invoiceNumber,
     this.hasDimensions = true,
+    this.paidAmount = 0,
+    this.isFullyPaid = false,
     required this.createdAt,
   });
 
@@ -54,6 +58,14 @@ class OrderModel {
 
   bool get allItemsPriced =>
       items.isNotEmpty && items.every((e) => e.hasPricing);
+
+  double get remainingAmount {
+    final total = totalPrice ?? 0;
+    return (total - paidAmount).clamp(0, double.infinity);
+  }
+
+  bool get hasOutstandingBalance =>
+      status == OrderStatus.completed && !isFullyPaid && remainingAmount > 0;
 
   String get displayRef {
     if (invoiceNumber == null) return customerCode.trim();
@@ -86,6 +98,10 @@ class OrderModel {
       paymentMethod: _paymentMethodFromString(data['paymentMethod'] as String?),
       invoiceNumber: (data['invoiceNumber'] as num?)?.toInt(),
       hasDimensions: data['hasDimensions'] as bool? ?? true,
+      paidAmount: (data['paidAmount'] as num?)?.toDouble() ?? 0,
+      isFullyPaid: data['isFullyPaid'] as bool? ??
+          (_statusFromString(data['status'] as String?) == OrderStatus.completed &&
+              data['paidAmount'] == null),
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -107,6 +123,8 @@ class OrderModel {
     'includeInCashbox': includeInCashbox,
     if (paymentMethod != null) 'paymentMethod': paymentMethod!.name,
     'hasDimensions': hasDimensions,
+    'paidAmount': paidAmount,
+    'isFullyPaid': isFullyPaid,
     'createdAt': Timestamp.fromDate(createdAt),
   };
 
@@ -117,6 +135,8 @@ class OrderModel {
     bool? includeInCashbox,
     OrderPaymentMethod? paymentMethod,
     bool? hasDimensions,
+    double? paidAmount,
+    bool? isFullyPaid,
   }) => OrderModel(
     id: id,
     customerCode: customerCode,
@@ -133,6 +153,8 @@ class OrderModel {
     paymentMethod: paymentMethod ?? this.paymentMethod,
     invoiceNumber: invoiceNumber,
     hasDimensions: hasDimensions ?? this.hasDimensions,
+    paidAmount: paidAmount ?? this.paidAmount,
+    isFullyPaid: isFullyPaid ?? this.isFullyPaid,
     createdAt: createdAt,
     notes: notes,
   );

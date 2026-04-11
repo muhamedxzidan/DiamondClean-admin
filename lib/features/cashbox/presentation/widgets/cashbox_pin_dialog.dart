@@ -32,6 +32,10 @@ Future<void> showCashboxPinDialog(
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 4,
+                enableSuggestions: false,
+                autocorrect: false,
+                enableIMEPersonalizedLearning: false,
+                autofillHints: const <String>[],
                 decoration: const InputDecoration(
                   labelText: AppStrings.cashboxPinCurrentHint,
                   counterText: '',
@@ -45,6 +49,10 @@ Future<void> showCashboxPinDialog(
               keyboardType: TextInputType.number,
               obscureText: true,
               maxLength: 4,
+              enableSuggestions: false,
+              autocorrect: false,
+              enableIMEPersonalizedLearning: false,
+              autofillHints: const <String>[],
               decoration: const InputDecoration(
                 labelText: AppStrings.cashboxPinNewHint,
                 counterText: '',
@@ -57,6 +65,10 @@ Future<void> showCashboxPinDialog(
               keyboardType: TextInputType.number,
               obscureText: true,
               maxLength: 4,
+              enableSuggestions: false,
+              autocorrect: false,
+              enableIMEPersonalizedLearning: false,
+              autofillHints: const <String>[],
               decoration: InputDecoration(
                 labelText: AppStrings.cashboxPinConfirmHint,
                 counterText: '',

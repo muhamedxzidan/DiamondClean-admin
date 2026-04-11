@@ -12,6 +12,7 @@ class OrdersDayGroup extends StatelessWidget {
   final Function(OrderModel) onOpenPricing;
   final Future<void> Function(OrderModel) onSendInvoice;
   final Function(OrderModel, OrderStatus) onStatusChanged;
+  final Function(OrderModel)? onPayRemaining;
   final bool showSpacing;
 
   const OrdersDayGroup({
@@ -23,6 +24,7 @@ class OrdersDayGroup extends StatelessWidget {
     required this.onOpenPricing,
     required this.onSendInvoice,
     required this.onStatusChanged,
+    this.onPayRemaining,
     this.showSpacing = true,
   });
 
@@ -44,6 +46,9 @@ class OrdersDayGroup extends StatelessWidget {
               onOpenPricing: () => onOpenPricing(order),
               onSendInvoice: () => onSendInvoice(order),
               onStatusChanged: (status) => onStatusChanged(order, status),
+              onPayRemaining: onPayRemaining != null
+                  ? () => onPayRemaining!(order)
+                  : null,
             ),
           ),
         if (showSpacing) const SizedBox(height: 8),

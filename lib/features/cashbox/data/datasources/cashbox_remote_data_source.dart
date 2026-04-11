@@ -1,3 +1,4 @@
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_audit_log_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
@@ -8,6 +9,8 @@ abstract class CashboxRemoteDataSource {
   Stream<List<CashboxExpenseModel>> watchExpenses();
   Stream<List<CashboxClosureModel>> watchClosures();
   Stream<CashboxSettingsModel?> watchSettings();
+  Stream<List<CashboxAuditLogModel>> watchAuditLogs();
+
   Future<void> recordOrderIncome(CashboxIncomeModel income);
   Future<void> saveOpeningBalance({
     required double openingBalance,
@@ -26,4 +29,8 @@ abstract class CashboxRemoteDataSource {
     required List<CashboxExpenseModel> expenses,
   });
   Future<void> savePin(String? pin);
+  Future<String?> getOwnerPin();
+
+  /// Log an operation to the audit trail.
+  Future<void> logAuditEvent(CashboxAuditLogModel event);
 }

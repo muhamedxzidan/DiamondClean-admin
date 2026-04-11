@@ -39,7 +39,6 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     final updatedItems = List<OrderItemModel>.from(rawItems);
     final item = updatedItems[itemIndex];
 
-    // Apply same pricing to all units
     final updatedUnits = List.generate(
       item.quantity,
       (_) => ItemUnitModel(width: width, height: height, unitPrice: unitPrice),
@@ -68,10 +67,46 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     String id,
     OrderStatus status, {
     String? paymentMethod,
-  }) => _collection.doc(id).update({
-    'status': status.name,
-    'paymentMethod': paymentMethod,
-  });
+    double? paidAmount,
+    bool? isFullyPaid,
+  }) =>
+      _collection.doc(id).update({
+        'status': status.name,
+        'paymentMethod': paymentMethod,
+        // ignore: use_null_aware_elements
+        if (paidAmount != null) 'paidAmount': paidAmount,
+        // ignore: use_null_aware_elements
+        if (isFullyPaid != null) 'isFullyPaid': isFullyPaid,
+      });
+
+  @override
+  Future<void> recordRemainingPayment(
+    String orderId, {
+    required double paidAmount,
+    required String paymentMethod,
+  }) async {
+    final doc = await _collection.doc(orderId).get();
+    final data = doc.data() as Map<String, dynamic>;
+    final currentPaid = (data['paidAmount'] as num?)?.toDouble() ?? 0;
+    final newTotal = currentPaid + paidAmount;
+
+    final totalItems = (data['items'] as List?)?.fold<double>(
+          0,
+          (sum, item) =>
+              sum +
+              (((item as Map<String, dynamic>)['price'] as num?)?.toDouble() ??
+                  0),
+        ) ??
+        0;
+    final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0;
+    final totalPrice = totalItems + deliveryFee;
+
+    await _collection.doc(orderId).update({
+      'paidAmount': newTotal,
+      'isFullyPaid': newTotal >= totalPrice,
+      'paymentMethod': paymentMethod,
+    });
+  }
 
   @override
   Future<void> assignInvoiceNumber(String orderId) async {

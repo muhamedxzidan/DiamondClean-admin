@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'expense_category.dart';
+
 class CashboxExpenseModel {
   final String id;
   final String title;
   final double amount;
+  final ExpenseCategory category;
   final String? createdBy;
   final DateTime createdAt;
 
@@ -11,6 +14,7 @@ class CashboxExpenseModel {
     required this.id,
     required this.title,
     required this.amount,
+    this.category = ExpenseCategory.other,
     required this.createdAt,
     this.createdBy,
   });
@@ -21,6 +25,7 @@ class CashboxExpenseModel {
       id: doc.id,
       title: data['title'] as String? ?? '',
       amount: (data['amount'] as num?)?.toDouble() ?? 0,
+      category: ExpenseCategory.fromValue(data['category'] as String?),
       createdBy: data['createdBy'] as String?,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
@@ -31,6 +36,7 @@ class CashboxExpenseModel {
   Map<String, dynamic> toFirestore() => {
     'title': title,
     'amount': amount,
+    'category': category.value,
     'createdBy': createdBy,
     'createdAt': Timestamp.fromDate(createdAt),
   };
@@ -38,6 +44,7 @@ class CashboxExpenseModel {
   CashboxExpenseModel copyWith({
     String? title,
     double? amount,
+    ExpenseCategory? category,
     String? createdBy,
     DateTime? createdAt,
   }) {
@@ -45,6 +52,7 @@ class CashboxExpenseModel {
       id: id,
       title: title ?? this.title,
       amount: amount ?? this.amount,
+      category: category ?? this.category,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
     );

@@ -16,7 +16,11 @@ import 'pricing_dialog/order_pricing_calculator.dart';
 class OrderPricingDialog extends StatefulWidget {
   final OrderModel order;
 
-  const OrderPricingDialog({super.key, required this.order});
+  const OrderPricingDialog({
+    super.key,
+    required this.order,
+    required bool hasDimensions,
+  });
 
   @override
   State<OrderPricingDialog> createState() => _OrderPricingDialogState();

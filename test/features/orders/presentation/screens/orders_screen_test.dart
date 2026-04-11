@@ -51,6 +51,15 @@ class _FakeOrdersRemoteDataSource implements OrdersRemoteDataSource {
     String id,
     OrderStatus status, {
     String? paymentMethod,
+    double? paidAmount,
+    bool? isFullyPaid,
+  }) async {}
+
+  @override
+  Future<void> recordRemainingPayment(
+    String orderId, {
+    required double paidAmount,
+    required String paymentMethod,
   }) async {}
 }
 
@@ -111,6 +120,8 @@ void main() {
   testWidgets('Orders screen renders the first loaded batch without crashing', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2000));
+
     final now = DateTime.now();
     final order = OrderModel(
       id: 'order-1',
@@ -149,5 +160,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text(AppStrings.ordersTitle), findsOneWidget);
     expect(find.text(AppStrings.noItemsFound), findsOneWidget);
+
+    await tester.binding.setSurfaceSize(null);
   });
 }

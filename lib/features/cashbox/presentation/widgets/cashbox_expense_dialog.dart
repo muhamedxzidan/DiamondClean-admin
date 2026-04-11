@@ -4,6 +4,7 @@ import 'package:diamond_clean/core/constants/app_strings.dart';
 
 import '../../cubit/cashbox_cubit.dart';
 import '../../data/models/cashbox_expense_model.dart';
+import '../../data/models/expense_category.dart';
 
 Future<void> showCashboxExpenseDialog(
   BuildContext context,
@@ -14,42 +15,65 @@ Future<void> showCashboxExpenseDialog(
   final amountController = TextEditingController(
     text: expense?.amount.toStringAsFixed(2) ?? '',
   );
+  var selectedCategory = expense?.category ?? ExpenseCategory.other;
 
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(
-        expense == null ? AppStrings.cashboxAddExpense : AppStrings.cashboxEditExpense,
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: AppStrings.cashboxExpenseName,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, setDialogState) => AlertDialog(
+        title: Text(
+          expense == null
+              ? AppStrings.cashboxAddExpense
+              : AppStrings.cashboxEditExpense,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<ExpenseCategory>(
+              initialValue: selectedCategory,
+              decoration: const InputDecoration(
+                labelText: AppStrings.cashboxExpenseCategory,
+              ),
+              items: ExpenseCategory.values
+                  .where((c) => c != ExpenseCategory.salary && c != ExpenseCategory.advance)
+                  .map(
+                    (c) => DropdownMenuItem(value: c, child: Text(c.label)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setDialogState(() => selectedCategory = value);
+                }
+              },
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: AppStrings.cashboxExpenseName,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: AppStrings.cashboxExpenseAmount,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: AppStrings.cashboxExpenseAmount,
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(AppStrings.save),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text(AppStrings.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(dialogContext, true),
-          child: const Text(AppStrings.save),
-        ),
-      ],
     ),
   );
 
@@ -59,9 +83,19 @@ Future<void> showCashboxExpenseDialog(
     if (title.isEmpty || amount <= 0) return;
 
     if (expense == null) {
-      await cubit.addExpense(title: title, amount: amount);
+      await cubit.addExpense(
+        title: title,
+        amount: amount,
+        category: selectedCategory,
+      );
     } else {
-      await cubit.updateExpense(expense.copyWith(title: title, amount: amount));
+      await cubit.updateExpense(
+        expense.copyWith(
+          title: title,
+          amount: amount,
+          category: selectedCategory,
+        ),
+      );
     }
   }
 }
