@@ -5,6 +5,7 @@ enum ExpenseCategory {
   transport('transport', 'نقل وتوصيل'),
   rent('rent', 'إيجار'),
   utilities('utilities', 'كهرباء ومياه'),
+  withdrawal('withdrawal', 'سحب من الخزينة'),
   other('other', 'أخرى');
 
   final String value;
@@ -19,6 +20,7 @@ enum ExpenseCategory {
     'transport' => ExpenseCategory.transport,
     'rent' => ExpenseCategory.rent,
     'utilities' => ExpenseCategory.utilities,
+    'withdrawal' => ExpenseCategory.withdrawal,
     _ => ExpenseCategory.other,
   };
 }

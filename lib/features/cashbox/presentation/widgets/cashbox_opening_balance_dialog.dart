@@ -51,4 +51,7 @@ Future<void> showCashboxOpeningBalanceDialog(
     final amount = double.tryParse(balanceController.text.trim()) ?? 0;
     await cubit.saveOpeningBalance(amount, nameController.text.trim());
   }
+
+  balanceController.dispose();
+  nameController.dispose();
 }

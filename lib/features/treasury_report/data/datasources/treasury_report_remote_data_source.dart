@@ -2,7 +2,7 @@ import 'package:diamond_clean/features/cashbox/data/models/cashbox_audit_log_mod
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
 import 'package:diamond_clean/features/orders/data/models/order_model.dart';
-
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import '../models/treasury_report_model.dart';
 
 abstract class TreasuryReportRemoteDataSource {
@@ -17,6 +17,10 @@ abstract class TreasuryReportRemoteDataSource {
     DateTime endDate,
   );
   Future<List<CashboxIncomeModel>> getIncomeByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
+  Future<List<CashboxClosureModel>> getClosuresByDateRange(
     DateTime startDate,
     DateTime endDate,
   );

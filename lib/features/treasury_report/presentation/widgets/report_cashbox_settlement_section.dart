@@ -70,6 +70,18 @@ class ReportCashboxSettlementSection extends StatelessWidget {
               showPlus: true,
               isMinus: true,
             ),
+            if (report.totalWithdrawn > 0) ...[
+              const SizedBox(height: 12),
+              _buildSettlementRow(
+                context,
+                label: 'إجمالي المسحوبات (التقفيلات)',
+                value: report.totalWithdrawn,
+                formatter: formatter,
+                color: Colors.red.shade800,
+                showPlus: true,
+                isMinus: true,
+              ),
+            ],
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(thickness: 2, height: 1),

@@ -1,3 +1,4 @@
+import 'package:diamond_clean/core/constants/app_strings.dart';
 import 'package:diamond_clean/features/cashbox/cubit/cashbox_state.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
@@ -53,9 +54,9 @@ void main() {
 
     expect(entries, hasLength(3));
     expect(entries.map((entry) => entry.type), [
-      'إقفال',
-      'مصروف',
-      'إيراد أوردر',
+      AppStrings.cashboxEventClosure,
+      'أخرى',
+      AppStrings.cashboxEventOrderFullPayment,
     ]);
     expect(entries.map((entry) => entry.amount), [140, -30, 120]);
   });

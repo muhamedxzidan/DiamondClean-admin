@@ -69,15 +69,14 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     String? paymentMethod,
     double? paidAmount,
     bool? isFullyPaid,
-  }) =>
-      _collection.doc(id).update({
-        'status': status.name,
-        'paymentMethod': paymentMethod,
-        // ignore: use_null_aware_elements
-        if (paidAmount != null) 'paidAmount': paidAmount,
-        // ignore: use_null_aware_elements
-        if (isFullyPaid != null) 'isFullyPaid': isFullyPaid,
-      });
+  }) => _collection.doc(id).update({
+    'status': status.name,
+    'paymentMethod': paymentMethod,
+    // ignore: use_null_aware_elements
+    if (paidAmount != null) 'paidAmount': paidAmount,
+    // ignore: use_null_aware_elements
+    if (isFullyPaid != null) 'isFullyPaid': isFullyPaid,
+  });
 
   @override
   Future<void> recordRemainingPayment(
@@ -90,10 +89,11 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     final currentPaid = (data['paidAmount'] as num?)?.toDouble() ?? 0;
     final newTotal = currentPaid + paidAmount;
 
-    final totalItems = (data['items'] as List?)?.fold<double>(
+    final totalItems =
+        (data['items'] as List?)?.fold<double>(
           0,
-          (sum, item) =>
-              sum +
+          (acc, item) =>
+              acc +
               (((item as Map<String, dynamic>)['price'] as num?)?.toDouble() ??
                   0),
         ) ??
@@ -117,7 +117,8 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
 
     await _firestore.runTransaction((tx) async {
       final counterSnap = await tx.get(counterRef);
-      final nextNumber = ((counterSnap.data()?['count'] as num?)?.toInt() ?? 0) + 1;
+      final nextNumber =
+          ((counterSnap.data()?['count'] as num?)?.toInt() ?? 0) + 1;
       tx.set(counterRef, {'count': nextNumber}, SetOptions(merge: true));
       tx.update(orderRef, {'invoiceNumber': nextNumber});
     });

@@ -33,6 +33,7 @@ abstract class EmployeesRemoteDataSource {
   Stream<List<EmployeeAdvanceModel>> watchEmployeeAdvances(String employeeId);
   Future<void> addEmployee(EmployeeModel employee);
   Future<void> updateEmployee(EmployeeModel employee);
+  Future<void> deleteEmployee(String employeeId);
   Future<void> addAdvance({
     required String employeeId,
     required double amount,
@@ -63,20 +64,23 @@ class EmployeesRemoteDataSourceImpl implements EmployeesRemoteDataSource {
 
   @override
   Stream<List<EmployeeModel>> watchEmployees() {
-    return _employeesRef.orderBy('createdAt', descending: true).snapshots().map(
-      (snapshot) {
-        return snapshot.docs.map(EmployeeModel.fromFirestore).toList();
-      },
-    );
+    return _employeesRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.map(EmployeeModel.fromFirestore).toList(),
+        );
   }
 
   @override
   Stream<List<EmployeeAdvanceModel>> watchEmployeeAdvances(String employeeId) {
-    return _advancesRef(
-      employeeId,
-    ).orderBy('createdAt', descending: true).snapshots().map((snapshot) {
-      return snapshot.docs.map(EmployeeAdvanceModel.fromFirestore).toList();
-    });
+    return _advancesRef(employeeId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map(EmployeeAdvanceModel.fromFirestore).toList(),
+        );
   }
 
   @override
@@ -87,6 +91,17 @@ class EmployeesRemoteDataSourceImpl implements EmployeesRemoteDataSource {
   @override
   Future<void> updateEmployee(EmployeeModel employee) async {
     await _employeesRef.doc(employee.id).update(employee.toFirestore());
+  }
+
+  @override
+  Future<void> deleteEmployee(String employeeId) async {
+    final advancesSnapshot = await _advancesRef(employeeId).get();
+    final batch = _firestore.batch();
+    for (final doc in advancesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_employeesRef.doc(employeeId));
+    await batch.commit();
   }
 
   @override

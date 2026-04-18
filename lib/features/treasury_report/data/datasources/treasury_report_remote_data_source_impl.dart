@@ -1,11 +1,11 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:diamond_clean/core/constants/firebase_constants.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_audit_log_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/expense_category.dart';
 import 'package:diamond_clean/features/orders/data/models/order_model.dart';
 
@@ -30,15 +30,21 @@ class TreasuryReportRemoteDataSourceImpl
       List<OrderModel> orders = const <OrderModel>[];
       List<CashboxExpenseModel> expenses = const <CashboxExpenseModel>[];
       List<CashboxIncomeModel> incomes = const <CashboxIncomeModel>[];
+      List<CashboxClosureModel> closures = const <CashboxClosureModel>[];
 
       var hasOrders = false;
       var hasExpenses = false;
       var hasIncomes = false;
+      var hasClosures = false;
       var isCancelled = false;
       var generation = 0;
 
       Future<void> emitIfReady() async {
-        if (!hasOrders || !hasExpenses || !hasIncomes || isCancelled) {
+        if (!hasOrders ||
+            !hasExpenses ||
+            !hasIncomes ||
+            !hasClosures ||
+            isCancelled) {
           return;
         }
 
@@ -50,6 +56,7 @@ class TreasuryReportRemoteDataSourceImpl
             orders: orders,
             expenses: expenses,
             incomes: incomes,
+            closures: closures,
           );
 
           if (!isCancelled && currentGeneration == generation) {
@@ -76,6 +83,11 @@ class TreasuryReportRemoteDataSourceImpl
         _watchIncomeByDateRange(startAt, endExclusive).listen((data) {
           incomes = data;
           hasIncomes = true;
+          unawaited(emitIfReady());
+        }, onError: multi.addError),
+        _watchClosuresByDateRange(startAt, endExclusive).listen((data) {
+          closures = data;
+          hasClosures = true;
           unawaited(emitIfReady());
         }, onError: multi.addError),
       ];
@@ -134,11 +146,13 @@ class TreasuryReportRemoteDataSourceImpl
       getOrdersByDateRange(normalizedStartDate, normalizedEndDate),
       getExpensesByDateRange(normalizedStartDate, normalizedEndDate),
       getIncomeByDateRange(normalizedStartDate, normalizedEndDate),
+      getClosuresByDateRange(normalizedStartDate, normalizedEndDate),
     ]);
 
     final orders = results[0] as List<OrderModel>;
     final expenses = results[1] as List<CashboxExpenseModel>;
     final incomes = results[2] as List<CashboxIncomeModel>;
+    final closures = results[3] as List<CashboxClosureModel>;
 
     return _buildReport(
       startDate: normalizedStartDate,
@@ -146,6 +160,7 @@ class TreasuryReportRemoteDataSourceImpl
       orders: orders,
       expenses: expenses,
       incomes: incomes,
+      closures: closures,
     );
   }
 
@@ -155,6 +170,7 @@ class TreasuryReportRemoteDataSourceImpl
     required List<OrderModel> orders,
     required List<CashboxExpenseModel> expenses,
     required List<CashboxIncomeModel> incomes,
+    required List<CashboxClosureModel> closures,
   }) async {
     // Order statistics
     final completedOrders = orders
@@ -216,10 +232,16 @@ class TreasuryReportRemoteDataSourceImpl
               o.status != OrderStatus.completed &&
               o.status != OrderStatus.cancelled,
         )
-        .fold<double>(0, (total, order) => total + (order.totalPrice ?? 0));
+        .fold<double>(0, (total, order) => total + order.remainingAmount);
 
     // Opening balance from the closest closure before startDate
     final openingBalance = await _getOpeningBalance(startDate);
+
+    // Total withdrawn mathematically equates to the sums of all processed closures during the given date range.
+    final totalWithdrawn = closures.fold<double>(
+      0,
+      (acc, closure) => acc + closure.closingBalance,
+    );
 
     return TreasuryReportModel(
       startDate: startDate,
@@ -236,6 +258,7 @@ class TreasuryReportRemoteDataSourceImpl
       expensesByCategory: expensesByCategory,
       openingBalance: openingBalance,
       remainingOrdersValue: remainingOrdersValue,
+      totalWithdrawn: totalWithdrawn,
     );
   }
 
@@ -269,6 +292,14 @@ class TreasuryReportRemoteDataSourceImpl
       .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
       .where('createdAt', isLessThan: Timestamp.fromDate(endExclusive));
 
+  Query<Map<String, dynamic>> _closureRangeQuery(
+    DateTime startDate,
+    DateTime endExclusive,
+  ) => _firestore
+      .collection(FirebaseConstants.cashboxClosuresCollection)
+      .where('closedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+      .where('closedAt', isLessThan: Timestamp.fromDate(endExclusive));
+
   Stream<List<OrderModel>> _watchOrdersByDateRange(
     DateTime startDate,
     DateTime endExclusive,
@@ -289,6 +320,24 @@ class TreasuryReportRemoteDataSourceImpl
   ) => _incomeRangeQuery(startDate, endExclusive).snapshots().map(
     (snapshot) => snapshot.docs.map(CashboxIncomeModel.fromFirestore).toList(),
   );
+
+  Stream<List<CashboxClosureModel>> _watchClosuresByDateRange(
+    DateTime startDate,
+    DateTime endExclusive,
+  ) => _closureRangeQuery(startDate, endExclusive).snapshots().map(
+    (snapshot) => snapshot.docs.map(CashboxClosureModel.fromFirestore).toList(),
+  );
+
+  @override
+  Future<List<CashboxClosureModel>> getClosuresByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final startAt = _dayStart(startDate);
+    final endExclusive = _nextDayStart(endDate);
+    final snapshot = await _closureRangeQuery(startAt, endExclusive).get();
+    return snapshot.docs.map(CashboxClosureModel.fromFirestore).toList();
+  }
 
   Future<double> _getOpeningBalance(DateTime startDate) async {
     final closureSnapshot = await _firestore

@@ -70,6 +70,18 @@ class EmployeesCubit extends Cubit<EmployeesState> {
     }
   }
 
+  Future<void> deleteEmployee(String employeeId) async {
+    try {
+      emit(const SavingEmployee());
+      await _dataSource.deleteEmployee(employeeId);
+      emit(const EmployeeDeleted());
+      emit(EmployeesLoaded(_currentEmployees));
+    } catch (error) {
+      emit(EmployeesError(error.toString()));
+      emit(EmployeesLoaded(_currentEmployees));
+    }
+  }
+
   Future<void> updateEmployee(EmployeeModel employee) async {
     try {
       emit(const SavingEmployee());

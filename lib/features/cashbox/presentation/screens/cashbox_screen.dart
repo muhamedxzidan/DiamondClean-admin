@@ -7,10 +7,9 @@ import 'package:diamond_clean/core/widgets/state_widgets.dart';
 import '../../cubit/cashbox_cubit.dart';
 import '../../cubit/cashbox_state.dart';
 import '../widgets/cashbox_close_sheet.dart';
-import '../widgets/cashbox_daily_report_section.dart';
-import '../widgets/cashbox_expenses_section.dart';
+import '../widgets/cashbox_app_bar_actions.dart';
+import '../widgets/cashbox_loaded_content.dart';
 import '../widgets/cashbox_opening_balance_dialog.dart';
-import '../widgets/cashbox_orders_section.dart';
 import '../widgets/cashbox_pin_dialog.dart';
 import '../widgets/cashbox_pin_overlay.dart';
 import 'closures_log_screen.dart';
@@ -25,6 +24,13 @@ class CashboxScreen extends StatefulWidget {
 
 class _CashboxScreenState extends State<CashboxScreen> {
   bool _isUnlocked = false;
+  late ScaffoldMessengerState _scaffoldMessenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
+  }
 
   Future<void> _pickDay() async {
     final state = context.read<CashboxCubit>().state;
@@ -70,86 +76,74 @@ class _CashboxScreenState extends State<CashboxScreen> {
         title: const Text(AppStrings.cashboxTitle),
         actions: [
           BlocBuilder<CashboxCubit, CashboxState>(
+            buildWhen: (previous, current) {
+              final prevPin = previous is CashboxLoaded
+                  ? previous.settings.ownerPin
+                  : null;
+              final currPin = current is CashboxLoaded
+                  ? current.settings.ownerPin
+                  : null;
+              return prevPin != currPin ||
+                  previous.runtimeType != current.runtimeType;
+            },
             builder: (context, state) {
               final pin = state is CashboxLoaded
                   ? state.settings.ownerPin
                   : null;
-              final locked = pin != null && !_isUnlocked;
               final cubit = context.read<CashboxCubit>();
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: _isUnlocked || pin == null
-                        ? () => showCashboxPinDialog(context, pin, cubit)
-                        : null,
-                    icon: Icon(
-                      pin == null
-                          ? Icons.lock_open_outlined
-                          : Icons.lock_outlined,
+              return CashboxAppBarActions(
+                hasPin: pin != null,
+                isUnlocked: _isUnlocked,
+                onPinPressed: () => showCashboxPinDialog(context, pin, cubit),
+                onPickDayPressed: _pickDay,
+                onOpeningBalancePressed: () =>
+                    showCashboxOpeningBalanceDialog(context, cubit),
+                onClosuresLogPressed: () {
+                  if (state is! CashboxLoaded) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          ClosuresLogScreen(closures: state.dailyClosures),
                     ),
-                    tooltip: pin == null
-                        ? AppStrings.cashboxPinSet
-                        : AppStrings.cashboxPinChange,
-                  ),
-                  IconButton(
-                    onPressed: locked ? null : _pickDay,
-                    icon: const Icon(Icons.calendar_month_outlined),
-                  ),
-                  IconButton(
-                    onPressed: locked
-                        ? null
-                        : () => showCashboxOpeningBalanceDialog(context, cubit),
-                    icon: const Icon(Icons.account_balance_wallet_outlined),
-                    tooltip: AppStrings.cashboxSetOpeningBalance,
-                  ),
-                  IconButton(
-                    onPressed: locked
-                        ? null
-                        : () {
-                            if (state is! CashboxLoaded) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => ClosuresLogScreen(
-                                  closures: state.dailyClosures,
-                                ),
-                              ),
-                            );
-                          },
-                    icon: const Icon(Icons.history_outlined),
-                    tooltip: AppStrings.cashboxClosuresLog,
-                  ),
-                  IconButton(
-                    onPressed: locked
-                        ? null
-                        : () {
-                            if (state is! CashboxLoaded) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => BlocProvider.value(
-                                  value: context.read<CashboxCubit>(),
-                                  child: const TreasuryLogScreen(),
-                                ),
-                              ),
-                            );
-                          },
-                    icon: const Icon(Icons.receipt_long_outlined),
-                    tooltip: AppStrings.cashboxTreasuryLog,
-                  ),
-                ],
+                  );
+                },
+                onTreasuryLogPressed: () {
+                  if (state is! CashboxLoaded) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<CashboxCubit>(),
+                        child: const TreasuryLogScreen(),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
         ],
       ),
       body: BlocConsumer<CashboxCubit, CashboxState>(
+        listenWhen: (previous, current) => current is CashboxError,
+        buildWhen: (previous, current) {
+          if (previous.runtimeType != current.runtimeType) return true;
+          if (previous is CashboxLoaded && current is CashboxLoaded) {
+            return previous.selectedDay != current.selectedDay ||
+                previous.sessionRevenue != current.sessionRevenue ||
+                previous.sessionExpenseEntries !=
+                    current.sessionExpenseEntries ||
+                previous.sessionIncomeEntries != current.sessionIncomeEntries ||
+                previous.settings.ownerPin != current.settings.ownerPin;
+          }
+          return true;
+        },
         listener: (context, state) {
           if (state is CashboxError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            _scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
           }
         },
         builder: (context, state) => switch (state) {
@@ -169,56 +163,11 @@ class _CashboxScreenState extends State<CashboxScreen> {
         onUnlocked: () => setState(() => _isUnlocked = true),
       );
     }
-    return _buildLoaded(context, state);
-  }
-
-  Widget _buildLoaded(BuildContext context, CashboxLoaded state) {
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async =>
-                context.read<CashboxCubit>().selectDay(state.selectedDay),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                CashboxDailyReportSection(state: state),
-                const SizedBox(height: 16),
-                CashboxExpensesSection(state: state),
-                const SizedBox(height: 16),
-                CashboxOrdersSection(state: state),
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ),
-        _buildCloseCta(context, state),
-      ],
-    );
-  }
-
-  Widget _buildCloseCta(BuildContext context, CashboxLoaded state) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: FilledButton(
-            onPressed: () => _showCloseBottomSheet(state),
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 4,
-            ),
-            child: const Text(
-              AppStrings.cashboxCloseTodayCta,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ),
+    return CashboxLoadedContent(
+      state: state,
+      onRefresh: () async =>
+          context.read<CashboxCubit>().selectDay(state.selectedDay),
+      onClosePressed: () => _showCloseBottomSheet(state),
     );
   }
 }

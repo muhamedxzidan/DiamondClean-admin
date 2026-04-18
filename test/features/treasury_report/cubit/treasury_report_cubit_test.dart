@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_audit_log_model.dart';
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_closure_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart';
 import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
 import 'package:diamond_clean/features/treasury_report/cubit/treasury_report_cubit.dart';
@@ -61,6 +62,14 @@ class _FakeTreasuryReportRemoteDataSource
     DateTime endDate,
   ) async {
     return const <CashboxAuditLogModel>[];
+  }
+
+  @override
+  Future<List<CashboxClosureModel>> getClosuresByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return const <CashboxClosureModel>[];
   }
 
   Future<void> dispose() => controller.close();

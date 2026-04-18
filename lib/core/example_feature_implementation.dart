@@ -10,6 +10,7 @@ import 'package:diamond_clean/core/widgets/custom_button.dart';
 import 'package:diamond_clean/core/widgets/custom_card.dart';
 import 'package:diamond_clean/core/widgets/custom_text_field.dart';
 import 'package:diamond_clean/core/widgets/state_widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide ErrorWidget;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -101,6 +102,8 @@ class CategoriesPage extends StatelessWidget {
         ],
       ),
       body: BlocBuilder<CategoriesCubit, CategoriesState>(
+        buildWhen: (previous, current) =>
+            previous.runtimeType != current.runtimeType,
         builder: (context, state) {
           // Loading State
           if (state is CategoriesLoading) {
@@ -206,7 +209,11 @@ class _CategoryCard extends StatelessWidget {
 
   void _editCategory(BuildContext context) {
     // Navigate to edit screen or show dialog
-    print('Edit: ${category.name}');
+    if (kDebugMode) {
+      if (kDebugMode) {
+        print('Edit: ${category.name}');
+      }
+    }
   }
 
   void _deleteCategory(BuildContext context) {
@@ -284,6 +291,11 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
           onPressed: () => Navigator.pop(context),
         ),
         BlocBuilder<CategoriesCubit, CategoriesState>(
+          buildWhen: (previous, current) {
+            final wasLoading = previous is CategoriesLoading;
+            final isLoading = current is CategoriesLoading;
+            return wasLoading != isLoading;
+          },
           builder: (context, state) => CustomButton(
             label: AppStrings.save,
             isLoading: state is CategoriesLoading,

@@ -32,6 +32,10 @@ class AppStrings {
   static const String employeesSalaryAmount = 'قيمة الراتب';
   static const String employeesSalaryValidation = 'أدخل قيمة راتب صحيحة';
   static const String employeesSaved = 'تم حفظ بيانات الموظف';
+  static const String employeesDeleteEmployee = 'حذف الموظف';
+  static const String employeesDeleted = 'تم حذف الموظف';
+  static const String employeesConfirmDelete =
+      'سيتم حذف بيانات الموظف وكل سجل السلف نهائياً. لا يمكن التراجع.';
   static const String employeesRemaining = 'المتبقي';
   static const String employeesAdvancesTotal = 'إجمالي السلف بالدورة';
   static const String employeesAdvancesCount = 'عدد مرات السلف';

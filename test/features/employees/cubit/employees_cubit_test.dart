@@ -42,6 +42,12 @@ class _FakeEmployeesRemoteDataSource implements EmployeesRemoteDataSource {
   Future<void> updateEmployee(EmployeeModel employee) async {}
 
   @override
+  Future<void> deleteEmployee(String employeeId) async {
+    employees = employees.where((e) => e.id != employeeId).toList();
+    _employeesController.add(employees);
+  }
+
+  @override
   Future<void> addAdvance({
     required String employeeId,
     required double amount,

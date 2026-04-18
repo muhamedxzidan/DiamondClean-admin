@@ -14,7 +14,9 @@ class CategoriesRemoteDataSourceImpl implements CategoriesRemoteDataSource {
 
   @override
   Future<List<CategoryModel>> getCategories() async {
-    final snapshot = await _collection.orderBy('createdAt', descending: true).get();
+    final snapshot = await _collection
+        .orderBy('createdAt', descending: true)
+        .get();
     return snapshot.docs.map(CategoryModel.fromFirestore).toList();
   }
 
@@ -28,7 +30,11 @@ class CategoriesRemoteDataSourceImpl implements CategoriesRemoteDataSource {
   }
 
   @override
-  Future<void> updateCategory(String id, String name, bool hasDimensions) async {
+  Future<void> updateCategory(
+    String id,
+    String name,
+    bool hasDimensions,
+  ) async {
     await _collection.doc(id).update({
       'name': name,
       'hasDimensions': hasDimensions,

@@ -127,7 +127,9 @@ class EmployeeDetailsScreen extends StatelessWidget {
                       RadioListTile<bool>(
                         title: const Text(AppStrings.employeesPayoutFull),
                         value: true,
+                        // ignore: deprecated_member_use
                         groupValue: isFullPayout,
+                        // ignore: deprecated_member_use
                         onChanged: (value) {
                           if (value == null) return;
                           setModalState(() {
@@ -141,7 +143,9 @@ class EmployeeDetailsScreen extends StatelessWidget {
                       RadioListTile<bool>(
                         title: const Text(AppStrings.employeesPayoutPartial),
                         value: false,
+                        // ignore: deprecated_member_use
                         groupValue: isFullPayout,
+                        // ignore: deprecated_member_use
                         onChanged: (value) {
                           if (value == null) return;
                           setModalState(() {
@@ -287,6 +291,14 @@ class EmployeeDetailsScreen extends StatelessWidget {
         appBar: AppBar(title: Text(employee.name)),
         floatingActionButton:
             BlocBuilder<EmployeeDetailsCubit, EmployeeDetailsState>(
+              buildWhen: (previous, current) {
+                if (previous.runtimeType != current.runtimeType) return true;
+                if (previous is EmployeeDetailsLoaded &&
+                    current is EmployeeDetailsLoaded) {
+                  return previous.employee != current.employee;
+                }
+                return false;
+              },
               builder: (context, detailsState) {
                 final loadedEmployee = detailsState is EmployeeDetailsLoaded
                     ? detailsState.employee
@@ -314,6 +326,15 @@ class EmployeeDetailsScreen extends StatelessWidget {
               },
             ),
         body: BlocBuilder<EmployeeDetailsCubit, EmployeeDetailsState>(
+          buildWhen: (previous, current) {
+            if (previous.runtimeType != current.runtimeType) return true;
+            if (previous is EmployeeDetailsLoaded &&
+                current is EmployeeDetailsLoaded) {
+              return previous.employee != current.employee ||
+                  previous.advances != current.advances;
+            }
+            return false;
+          },
           builder: (context, state) {
             if (state is EmployeeDetailsLoading ||
                 state is EmployeeDetailsInitial) {
@@ -328,91 +349,94 @@ class EmployeeDetailsScreen extends StatelessWidget {
               final loadedEmployee = state.employee;
               final remaining = loadedEmployee.remainingSalary;
 
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if ((loadedEmployee.nationalId ?? '').isNotEmpty) ...[
-                            Text(
-                              '${AppStrings.employeesNationalId}: ${loadedEmployee.nationalId}',
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          if ((loadedEmployee.city ?? '').isNotEmpty) ...[
-                            Text(
-                              '${AppStrings.employeesCity}: ${loadedEmployee.city}',
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          Text(
-                            '${AppStrings.employeesSalaryCycle}: ${loadedEmployee.salaryCycle.arabicLabel}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${AppStrings.employeesSalaryAmount}: ${loadedEmployee.salaryAmount.toStringAsFixed(2)} ${AppStrings.currency}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${AppStrings.employeesAdvancesTotal}: ${loadedEmployee.currentCycleAdvancesTotal.toStringAsFixed(2)} ${AppStrings.currency}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${AppStrings.employeesPaidTotal}: ${loadedEmployee.currentCyclePaidTotal.toStringAsFixed(2)} ${AppStrings.currency}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${AppStrings.employeesSalaryOutstanding}: ${remaining.toStringAsFixed(2)} ${AppStrings.currency}',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${AppStrings.employeesAdvancesCount}: ${loadedEmployee.totalAdvancesCount}',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    AppStrings.employeesAdvanceHistory,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  if (state.advances.isEmpty)
-                    const Card(
+              return RepaintBoundary(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
                       child: Padding(
-                        padding: EdgeInsets.all(14),
-                        child: Text(AppStrings.employeesNoAdvances),
-                      ),
-                    )
-                  else
-                    ...state.advances.map(
-                      (advance) => Card(
-                        child: ListTile(
-                          title: Text(
-                            '${advance.amount.toStringAsFixed(2)} ${AppStrings.currency}',
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(formatDateTime(advance.createdAt)),
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if ((loadedEmployee.nationalId ?? '')
+                                .isNotEmpty) ...[
                               Text(
-                                advance.note.isEmpty
-                                    ? AppStrings.employeesNoNote
-                                    : advance.note,
+                                '${AppStrings.employeesNationalId}: ${loadedEmployee.nationalId}',
                               ),
+                              const SizedBox(height: 8),
                             ],
-                          ),
+                            if ((loadedEmployee.city ?? '').isNotEmpty) ...[
+                              Text(
+                                '${AppStrings.employeesCity}: ${loadedEmployee.city}',
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            Text(
+                              '${AppStrings.employeesSalaryCycle}: ${loadedEmployee.salaryCycle.arabicLabel}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${AppStrings.employeesSalaryAmount}: ${loadedEmployee.salaryAmount.toStringAsFixed(2)} ${AppStrings.currency}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${AppStrings.employeesAdvancesTotal}: ${loadedEmployee.currentCycleAdvancesTotal.toStringAsFixed(2)} ${AppStrings.currency}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${AppStrings.employeesPaidTotal}: ${loadedEmployee.currentCyclePaidTotal.toStringAsFixed(2)} ${AppStrings.currency}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${AppStrings.employeesSalaryOutstanding}: ${remaining.toStringAsFixed(2)} ${AppStrings.currency}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${AppStrings.employeesAdvancesCount}: ${loadedEmployee.totalAdvancesCount}',
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                ],
+                    const SizedBox(height: 12),
+                    Text(
+                      AppStrings.employeesAdvanceHistory,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    if (state.advances.isEmpty)
+                      const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(14),
+                          child: Text(AppStrings.employeesNoAdvances),
+                        ),
+                      )
+                    else
+                      ...state.advances.map(
+                        (advance) => Card(
+                          child: ListTile(
+                            title: Text(
+                              '${advance.amount.toStringAsFixed(2)} ${AppStrings.currency}',
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(formatDateTime(advance.createdAt)),
+                                Text(
+                                  advance.note.isEmpty
+                                      ? AppStrings.employeesNoNote
+                                      : advance.note,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               );
             }
 

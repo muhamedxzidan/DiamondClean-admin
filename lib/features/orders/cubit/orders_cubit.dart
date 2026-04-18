@@ -26,8 +26,9 @@ class OrdersCubit extends Cubit<OrdersState> {
   }) : _cashboxDataSource = cashboxDataSource,
        super(const OrdersInitial());
 
-  void listenToOrders() {
+  Future<void> listenToOrders() async {
     emit(const OrdersLoading());
+    await _subscription?.cancel();
     _subscription = _dataSource.watchOrders().listen((orders) {
       _currentOrders = orders;
       emit(OrdersLoaded(orders));
@@ -36,17 +37,29 @@ class OrdersCubit extends Cubit<OrdersState> {
   }
 
   void _assignMissingInvoiceNumbers(List<OrderModel> orders) {
+    final activePendingIds = <String>{};
+
     for (final order in orders) {
-      if (order.invoiceNumber == null && !_pendingInvoiceIds.contains(order.id)) {
-        _pendingInvoiceIds.add(order.id);
-        _dataSource.assignInvoiceNumber(order.id).catchError(
-          (e) {
-            _pendingInvoiceIds.remove(order.id);
-            debugPrint('Invoice number assignment failed: $e');
-          },
-        );
+      if (order.invoiceNumber != null) {
+        continue;
       }
+
+      activePendingIds.add(order.id);
+
+      if (_pendingInvoiceIds.contains(order.id)) {
+        continue;
+      }
+
+      _pendingInvoiceIds.add(order.id);
+      _dataSource.assignInvoiceNumber(order.id).catchError((e) {
+        _pendingInvoiceIds.remove(order.id);
+        debugPrint('Invoice number assignment failed: $e');
+      });
     }
+
+    _pendingInvoiceIds
+      ..clear()
+      ..addAll(activePendingIds);
   }
 
   Future<void> updateItemPricing(
@@ -154,11 +167,15 @@ class OrdersCubit extends Cubit<OrdersState> {
       );
 
       final order = _findOrder(orderId);
-      if (order != null && order.includeInCashbox && _cashboxDataSource != null) {
+      if (order != null &&
+          order.includeInCashbox &&
+          _cashboxDataSource != null) {
         try {
           final total = order.totalPrice ?? 0;
           final newPaid = order.paidAmount + amount;
-          final remaining = (total - newPaid).clamp(0, double.infinity).toDouble();
+          final remaining = (total - newPaid)
+              .clamp(0, double.infinity)
+              .toDouble();
 
           await _cashboxDataSource.recordOrderIncome(
             CashboxIncomeModel(
@@ -219,8 +236,10 @@ class OrdersCubit extends Cubit<OrdersState> {
     if (!order.includeInCashbox || _cashboxDataSource == null) return;
     try {
       final total = order.totalPrice ?? 0;
-      final remaining = (total - paidAmount).clamp(0, double.infinity).toDouble();
-      
+      final remaining = (total - paidAmount)
+          .clamp(0, double.infinity)
+          .toDouble();
+
       await _cashboxDataSource.recordOrderIncome(
         CashboxIncomeModel(
           orderId: order.id,
@@ -240,8 +259,8 @@ class OrdersCubit extends Cubit<OrdersState> {
   }
 
   @override
-  Future<void> close() {
-    _subscription?.cancel();
+  Future<void> close() async {
+    await _subscription?.cancel();
     return super.close();
   }
 }

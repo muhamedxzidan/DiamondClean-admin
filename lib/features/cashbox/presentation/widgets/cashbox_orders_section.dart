@@ -1,3 +1,4 @@
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_income_model.dart';
 import 'package:flutter/material.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
@@ -12,12 +13,6 @@ class CashboxOrdersSection extends StatelessWidget {
 
   const CashboxOrdersSection({super.key, required this.state});
 
-  String _paymentMethodLabel(String? value) => switch (value) {
-        'cash' => AppStrings.paymentMethodCash,
-        'vodafoneCash' => AppStrings.paymentMethodVodafoneCash,
-        'instapay' => AppStrings.paymentMethodInstapay,
-        _ => AppStrings.cashboxUnknownPaymentMethod,
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -53,21 +48,39 @@ class CashboxOrdersSection extends StatelessWidget {
             const EmptyStateWidget(message: AppStrings.noOrdersFound)
           else
             ...state.sessionIncomeEntries.map(
-              (income) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: CustomCard(
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(income.customerName),
-                    subtitle: Text(
-                      '${income.customerPhone} • ${formatDate(income.createdAt)} • ${AppStrings.cashboxPaymentMethod}: ${_paymentMethodLabel(income.paymentMethod)}${income.remainingAmount > 0 ? " • ${AppStrings.cashboxRemainingAmount}: ${income.remainingAmount.toStringAsFixed(2)}" : ""}',
-                    ),
-                    trailing: Text(income.orderTotal.toStringAsFixed(2)),
-                  ),
-                ),
-              ),
+              (income) => CashboxIncomeListItem(income: income),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class CashboxIncomeListItem extends StatelessWidget {
+  final CashboxIncomeModel income;
+
+  const CashboxIncomeListItem({super.key, required this.income});
+
+  String _paymentMethodLabel(String? value) => switch (value) {
+        'cash' => AppStrings.paymentMethodCash,
+        'vodafoneCash' => AppStrings.paymentMethodVodafoneCash,
+        'instapay' => AppStrings.paymentMethodInstapay,
+        _ => AppStrings.cashboxUnknownPaymentMethod,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: CustomCard(
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(income.customerName),
+          subtitle: Text(
+            '${income.customerPhone} • ${formatDate(income.createdAt)} • ${AppStrings.cashboxPaymentMethod}: ${_paymentMethodLabel(income.paymentMethod)}${income.remainingAmount > 0 ? " • ${AppStrings.cashboxRemainingAmount}: ${income.remainingAmount.toStringAsFixed(2)}" : ""}',
+          ),
+          trailing: Text(income.orderTotal.toStringAsFixed(2)),
+        ),
       ),
     );
   }

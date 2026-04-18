@@ -45,12 +45,14 @@ class _AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
+      buildWhen: (previous, current) =>
+          previous.runtimeType != current.runtimeType,
       builder: (context, state) => switch (state) {
         AuthAuthenticated() => const DashboardShell(),
         AuthUnauthenticated() || AuthError() => const LoginScreen(),
         AuthLoading() || AuthInitial() => const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          ),
+          body: Center(child: CircularProgressIndicator()),
+        ),
       },
     );
   }

@@ -3,14 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
 import 'package:diamond_clean/core/utils/whatsapp_invoice_service.dart';
-import '../../core/orders_grouping.dart';
 import '../../cubit/orders_cubit.dart';
 import '../../cubit/orders_state.dart';
 import '../../data/models/order_model.dart';
 import '../widgets/completion_payment_dialog.dart';
 import '../widgets/order_pricing_dialog.dart';
-import '../widgets/orders_day_group.dart';
 import '../widgets/orders_error_view.dart';
+import '../widgets/orders_loaded_content.dart';
 import '../widgets/orders_search_bar.dart';
 import '../widgets/orders_status_filter.dart';
 import '../widgets/remaining_payment_dialog.dart';
@@ -24,7 +23,6 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   late final TextEditingController _searchController;
-  late Set<DateTime> expandedDays;
   String _searchQuery = '';
   OrderFilterMode _selectedFilter = OrderFilterMode.all;
 
@@ -32,7 +30,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    expandedDays = {};
     context.read<OrdersCubit>().listenToOrders();
   }
 
@@ -40,24 +37,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _initializeexpandedDays(List<OrderModel> orders) {
-    if (expandedDays.isEmpty) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      expandedDays.add(today);
-    }
-  }
-
-  void _toggleDayExpansion(DateTime day) {
-    setState(() {
-      if (expandedDays.contains(day)) {
-        expandedDays.remove(day);
-      } else {
-        expandedDays.add(day);
-      }
-    });
   }
 
   void _showPricingDialog(OrderModel order) {
@@ -158,6 +137,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: BlocConsumer<OrdersCubit, OrdersState>(
+              listenWhen: (previous, current) => current is OrdersError,
+              buildWhen: (previous, current) {
+                if (previous.runtimeType != current.runtimeType) return true;
+                if (previous is OrdersLoaded && current is OrdersLoaded) {
+                  // orders list reference changes whenever state changes properly in Cubit
+                  return previous.orders != current.orders;
+                }
+                return true;
+              },
               listener: (context, state) {
                 if (state is OrdersError) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +160,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 OrdersInitial() || OrdersLoading() => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                OrdersLoaded(:final orders) => _buildOrdersResult(orders),
+                OrdersLoaded(:final orders) => OrdersLoadedContent(
+                  orders: orders,
+                  searchQuery: _searchQuery,
+                  selectedFilter: _selectedFilter,
+                  onOpenPricing: _showPricingDialog,
+                  onSendInvoice: _sendInvoice,
+                  onStatusChanged: _handleStatusChange,
+                  onPayRemaining: _handlePayRemaining,
+                ),
                 OrdersError(:final message) => OrdersErrorView(
                   message: message,
                   onRetry: () => context.read<OrdersCubit>().listenToOrders(),
@@ -182,68 +178,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildOrdersResult(List<OrderModel> orders) {
-    final filteredOrders = _filterOrders(orders);
-
-    if (filteredOrders.isEmpty) {
-      return Center(
-        child: Text(
-          _hasActiveFilters
-              ? AppStrings.noMatchingOrders
-              : AppStrings.noOrdersFound,
-        ),
-      );
-    }
-
-    return _buildGroupedOrders(filteredOrders);
-  }
-
-  List<OrderModel> _filterOrders(List<OrderModel> orders) {
-    return orders.where((order) {
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          _matches(order.customerCode) ||
-          _matches(order.customerPhone);
-      final matchesFilter =
-          OrdersStatusFilter.matchesFilter(order, _selectedFilter);
-      return matchesSearch && matchesFilter;
-    }).toList();
-  }
-
-  bool get _hasActiveFilters =>
-      _searchQuery.isNotEmpty || _selectedFilter != OrderFilterMode.all;
-
-  bool _matches(String value) => value.toLowerCase().contains(_searchQuery);
-
-  Widget _buildGroupedOrders(List<OrderModel> orders) {
-    _initializeexpandedDays(orders);
-
-    final grouped = OrdersGrouping.groupOrdersByDay(orders);
-    final days = grouped.keys.toList();
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: days.length,
-      itemBuilder: (_, dayIndex) {
-        final day = days[dayIndex];
-        final dayOrders = grouped[day]!;
-        final isExpanded = expandedDays.contains(day);
-
-        return OrdersDayGroup(
-          day: day,
-          orders: dayOrders,
-          isExpanded: isExpanded,
-          onToggleExpansion: () => _toggleDayExpansion(day),
-          onOpenPricing: _showPricingDialog,
-          onSendInvoice: _sendInvoice,
-          onStatusChanged: _handleStatusChange,
-          onPayRemaining: _handlePayRemaining,
-          showSpacing: dayIndex < days.length - 1,
-        );
-      },
     );
   }
 }

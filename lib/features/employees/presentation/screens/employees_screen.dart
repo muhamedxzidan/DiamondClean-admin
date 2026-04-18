@@ -61,6 +61,31 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     );
   }
 
+  Future<void> _confirmDeleteEmployee(EmployeeModel employee) async {
+    final employeesCubit = context.read<EmployeesCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('${AppStrings.employeesDeleteEmployee}: ${employee.name}'),
+        content: const Text(AppStrings.employeesConfirmDelete),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(AppStrings.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await employeesCubit.deleteEmployee(employee.id);
+    }
+  }
+
   Future<void> _showAddEmployeeDialog() async {
     final employeesCubit = context.read<EmployeesCubit>();
     final formKey = GlobalKey<FormState>();
@@ -214,14 +239,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             tooltip: 'تقرير الخزنة',
             onPressed: () async {
               final ownerPin = await _cashboxDataSource.getOwnerPin();
-              if (!mounted) {
+              if (!context.mounted) {
                 return;
               }
               final granted = await requestCashboxFeatureAccess(
                 context,
                 ownerPin: ownerPin,
               );
-              if (!granted || !mounted) {
+              if (!granted || !context.mounted) {
                 return;
               }
               Navigator.of(context).push(
@@ -259,6 +284,17 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           ),
           Expanded(
             child: BlocConsumer<EmployeesCubit, EmployeesState>(
+              listenWhen: (previous, current) =>
+                  current is EmployeesError ||
+                  current is EmployeeSaved ||
+                  current is EmployeeDeleted,
+              buildWhen: (previous, current) {
+                if (previous.runtimeType != current.runtimeType) return true;
+                if (previous is EmployeesLoaded && current is EmployeesLoaded) {
+                  return previous.employees != current.employees;
+                }
+                return true;
+              },
               listener: (context, state) {
                 if (state is EmployeesError) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -272,6 +308,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(AppStrings.employeesSaved),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+                if (state is EmployeeDeleted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(AppStrings.employeesDeleted),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -305,7 +349,20 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                         leading: const CircleAvatar(
                           child: Icon(Icons.badge_outlined),
                         ),
-                        title: Text(employee.name),
+                        title: Row(
+                          children: [
+                            Expanded(child: Text(employee.name)),
+                            IconButton(
+                              tooltip: AppStrings.employeesDeleteEmployee,
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () =>
+                                  _confirmDeleteEmployee(employee),
+                            ),
+                          ],
+                        ),
                         subtitle: Text(
                           '${employee.salaryCycle.arabicLabel} - '
                           '${employee.salaryAmount.toStringAsFixed(2)} ${AppStrings.currency}',

@@ -121,9 +121,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final customer = customers[index];
-        return CustomerListItem(
-          customer: customer,
-          onTap: () => _openCustomerDetails(customer),
+        return RepaintBoundary(
+          child: CustomerListItem(
+            customer: customer,
+            onTap: () => _openCustomerDetails(customer),
+          ),
         );
       },
     );

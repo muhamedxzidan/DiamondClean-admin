@@ -59,7 +59,9 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
         }
       },
       child: AlertDialog(
-        title: Text(_isEditing ? AppStrings.editCategory : AppStrings.addCategory),
+        title: Text(
+          _isEditing ? AppStrings.editCategory : AppStrings.addCategory,
+        ),
         content: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -73,8 +75,9 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
                     labelText: AppStrings.categoryName,
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? AppStrings.fieldRequired
+                      : null,
                   onFieldSubmitted: (_) => _submit(),
                 ),
               ],
@@ -87,6 +90,11 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
             child: const Text(AppStrings.cancel),
           ),
           BlocBuilder<CategoryCubit, CategoryState>(
+            buildWhen: (previous, current) {
+              final wasLoading = previous is CategoryOperationLoading;
+              final isLoading = current is CategoryOperationLoading;
+              return wasLoading != isLoading;
+            },
             builder: (context, state) {
               final isLoading = state is CategoryOperationLoading;
               return FilledButton(

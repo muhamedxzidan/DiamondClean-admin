@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:diamond_clean/core/constants/app_strings.dart';
+import 'package:diamond_clean/core/utils/treasury_report_date_range_calculator.dart';
 import 'package:diamond_clean/features/cashbox/cubit/cashbox_cubit.dart';
-import 'package:diamond_clean/features/cashbox/data/datasources/cashbox_remote_data_source.dart';
-import 'package:diamond_clean/features/cashbox/data/datasources/cashbox_remote_data_source_impl.dart';
+import 'package:diamond_clean/features/cashbox/cubit/cashbox_state.dart';
 import 'package:diamond_clean/features/cashbox/presentation/widgets/cashbox_pin_dialog.dart';
 
 import '../../cubit/treasury_report_cubit.dart';
 import '../../cubit/treasury_report_state.dart';
-import '../widgets/report_audit_log_section.dart';
-import '../widgets/report_cashbox_settlement_section.dart';
-import '../widgets/report_expenses_section.dart';
-import '../widgets/report_orders_section.dart';
-import '../widgets/report_profit_section.dart';
 import '../widgets/report_quick_date_filter.dart';
-import '../widgets/report_revenue_section.dart';
+import '../widgets/treasury_report_error_view.dart';
+import '../widgets/treasury_report_loaded_view.dart';
 
 class TreasuryReportScreen extends StatefulWidget {
   const TreasuryReportScreen({super.key});
@@ -27,54 +22,48 @@ class TreasuryReportScreen extends StatefulWidget {
 }
 
 class _TreasuryReportScreenState extends State<TreasuryReportScreen> {
+  static const _dateRangeCalculator = TreasuryReportDateRangeCalculator();
+
   late DateTime _startDate;
   late DateTime _endDate;
-  late final CashboxRemoteDataSource _cashboxDataSource;
   var _selectedFilter = ReportDateFilter.week;
 
   @override
   void initState() {
     super.initState();
-    _cashboxDataSource = CashboxRemoteDataSourceImpl(
-      FirebaseFirestore.instance,
+    final range = _dateRangeCalculator.rangeFor(
+      ReportDateFilter.week,
+      DateTime.now(),
     );
-    _applyFilter(ReportDateFilter.week);
+    _startDate = range!.start;
+    _endDate = range.end;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadReport();
+    });
   }
 
   Future<void> _showChangePinDialog() async {
-    final currentPin = await _cashboxDataSource.getOwnerPin();
+    final cubit = context.read<CashboxCubit>();
+    final currentPin = switch (cubit.state) {
+      CashboxLoaded(:final settings) => settings.ownerPin,
+      _ => null,
+    };
     if (!mounted) {
       return;
     }
-    await showCashboxPinDialog(
-      context,
-      currentPin,
-      context.read<CashboxCubit>(),
-    );
+    await showCashboxPinDialog(context, currentPin, cubit);
   }
 
   void _applyFilter(ReportDateFilter filter) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
     setState(() => _selectedFilter = filter);
 
-    switch (filter) {
-      case ReportDateFilter.today:
-        _startDate = today;
-        _endDate = today;
-      case ReportDateFilter.week:
-        _startDate = today.subtract(const Duration(days: 7));
-        _endDate = today;
-      case ReportDateFilter.month:
-        _startDate = DateTime(now.year, now.month - 1, now.day);
-        _endDate = today;
-      case ReportDateFilter.threeMonths:
-        _startDate = DateTime(now.year, now.month - 3, now.day);
-        _endDate = today;
-      case ReportDateFilter.custom:
-        return;
+    final range = _dateRangeCalculator.rangeFor(filter, DateTime.now());
+    if (range == null) {
+      return;
     }
+
+    _startDate = range.start;
+    _endDate = range.end;
 
     _loadReport();
   }
@@ -141,6 +130,15 @@ class _TreasuryReportScreenState extends State<TreasuryReportScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: BlocBuilder<TreasuryReportCubit, TreasuryReportState>(
+              buildWhen: (previous, current) {
+                if (previous.runtimeType != current.runtimeType) return true;
+                if (previous is TreasuryReportLoaded &&
+                    current is TreasuryReportLoaded) {
+                  return previous.report != current.report ||
+                      previous.auditLogs != current.auditLogs;
+                }
+                return false;
+              },
               builder: (context, state) => switch (state) {
                 TreasuryReportInitial() => Center(
                   child: Text(AppStrings.treasuryReportSelectPeriod),
@@ -152,46 +150,16 @@ class _TreasuryReportScreenState extends State<TreasuryReportScreen> {
                   report: final report,
                   auditLogs: final auditLogs,
                 ) =>
-                  RefreshIndicator(
+                  TreasuryReportLoadedView(
+                    report: report,
+                    auditLogs: auditLogs,
                     onRefresh: () async => _loadReport(),
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        ReportCashboxSettlementSection(report: report),
-                        const SizedBox(height: 20),
-                        ReportRevenueSection(report: report),
-                        const SizedBox(height: 20),
-                        ReportExpensesSection(report: report),
-                        const SizedBox(height: 20),
-                        ReportOrdersSection(report: report),
-                        const SizedBox(height: 20),
-                        ReportProfitSection(report: report),
-                        const SizedBox(height: 20),
-                        if (auditLogs.isNotEmpty)
-                          ReportAuditLogSection(auditLogs: auditLogs),
-                        const SizedBox(height: 40),
-                      ],
-                    ),
                   ),
-                TreasuryReportError(message: final message) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text('خطأ: $message'),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: _loadReport,
-                        child: const Text(AppStrings.tryAgain),
-                      ),
-                    ],
+                TreasuryReportError(message: final message) =>
+                  TreasuryReportErrorView(
+                    message: message,
+                    onRetry: _loadReport,
                   ),
-                ),
               },
             ),
           ),

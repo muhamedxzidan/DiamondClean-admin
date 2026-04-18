@@ -35,10 +35,12 @@ Future<void> showCashboxExpenseDialog(
                 labelText: AppStrings.cashboxExpenseCategory,
               ),
               items: ExpenseCategory.values
-                  .where((c) => c != ExpenseCategory.salary && c != ExpenseCategory.advance)
-                  .map(
-                    (c) => DropdownMenuItem(value: c, child: Text(c.label)),
+                  .where(
+                    (c) =>
+                        c != ExpenseCategory.salary &&
+                        c != ExpenseCategory.advance,
                   )
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
                   .toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -98,4 +100,7 @@ Future<void> showCashboxExpenseDialog(
       );
     }
   }
+
+  titleController.dispose();
+  amountController.dispose();
 }

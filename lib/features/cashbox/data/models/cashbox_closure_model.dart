@@ -23,15 +23,14 @@ class CashboxClosureModel {
     required this.closedAt,
   });
 
-  factory CashboxClosureModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory CashboxClosureModel.fromMap(String id, Map<String, dynamic> data) {
     final expensesList = (data['expenses'] as List<dynamic>?)
             ?.map((e) => ClosureExpenseEntry.fromMap(e as Map<String, dynamic>))
             .toList() ??
         [];
 
     return CashboxClosureModel(
-      id: doc.id,
+      id: id,
       closedBy: data['closedBy'] as String? ?? '',
       openingBalance: (data['openingBalance'] as num?)?.toDouble() ?? 0,
       totalRevenue: (data['totalRevenue'] as num?)?.toDouble() ?? 0,
@@ -44,6 +43,9 @@ class CashboxClosureModel {
           : DateTime.now(),
     );
   }
+
+  factory CashboxClosureModel.fromFirestore(DocumentSnapshot doc) =>
+      CashboxClosureModel.fromMap(doc.id, doc.data() as Map<String, dynamic>);
 
   Map<String, dynamic> toFirestore() => {
     'closedBy': closedBy,

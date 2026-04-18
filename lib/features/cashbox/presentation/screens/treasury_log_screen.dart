@@ -70,6 +70,13 @@ class _TreasuryLogContentState extends State<_TreasuryLogContent> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CashboxCubit, CashboxState>(
+      buildWhen: (previous, current) {
+        if (previous.runtimeType != current.runtimeType) return true;
+        if (previous is CashboxLoaded && current is CashboxLoaded) {
+          return previous.treasuryLogEntries != current.treasuryLogEntries;
+        }
+        return false;
+      },
       builder: (context, state) {
         final entries = switch (state) {
           CashboxLoaded(:final treasuryLogEntries) =>
@@ -106,82 +113,85 @@ class _TreasuryLogContentState extends State<_TreasuryLogContent> {
                         final entry = entries[index];
                         final isNegative = entry.amount < 0;
                         final theme = Theme.of(context);
-                        return CustomCard(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry.type,
-                                      style: theme.textTheme.labelLarge,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      TreasuryLogScreen._formatDateTime(
-                                        entry.dateTime,
+                        return RepaintBoundary(
+                          child: CustomCard(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.type,
+                                        style: theme.textTheme.labelLarge,
                                       ),
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '${isNegative ? "" : "+"}${entry.amount.toStringAsFixed(2)}',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: isNegative
-                                        ? theme.colorScheme.error
-                                        : theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      entry.note,
-                                      style: theme.textTheme.bodySmall,
-                                      textAlign: TextAlign.end,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (entry.paymentMethod != null &&
-                                        entry.paymentMethod!.isNotEmpty) ...[
                                       const SizedBox(height: 2),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
+                                      Text(
+                                        TreasuryLogScreen._formatDateTime(
+                                          entry.dateTime,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: theme
-                                              .colorScheme
-                                              .primaryContainer,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          entry.paymentMethod!,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onPrimaryContainer,
-                                              ),
-                                        ),
+                                        style: theme.textTheme.bodySmall,
                                       ),
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                                Expanded(
+                                  child: Text(
+                                    '${isNegative ? "" : "+"}${entry.amount.toStringAsFixed(2)}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isNegative
+                                          ? theme.colorScheme.error
+                                          : theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        entry.note,
+                                        style: theme.textTheme.bodySmall,
+                                        textAlign: TextAlign.end,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (entry.paymentMethod != null &&
+                                          entry.paymentMethod!.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: theme
+                                                .colorScheme
+                                                .primaryContainer,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            entry.paymentMethod!,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

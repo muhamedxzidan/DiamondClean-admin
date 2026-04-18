@@ -23,10 +23,9 @@ class CashboxIncomeModel {
     required this.createdAt,
   });
 
-  factory CashboxIncomeModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory CashboxIncomeModel.fromMap(String id, Map<String, dynamic> data) {
     return CashboxIncomeModel(
-      orderId: doc.id,
+      orderId: id,
       orderTotal: (data['orderTotal'] as num?)?.toDouble() ?? 0,
       deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0,
       customerName: data['customerName'] as String? ?? '',
@@ -39,6 +38,9 @@ class CashboxIncomeModel {
           : DateTime.now(),
     );
   }
+
+  factory CashboxIncomeModel.fromFirestore(DocumentSnapshot doc) =>
+      CashboxIncomeModel.fromMap(doc.id, doc.data() as Map<String, dynamic>);
 
   Map<String, dynamic> toFirestore() => {
     'orderTotal': orderTotal,

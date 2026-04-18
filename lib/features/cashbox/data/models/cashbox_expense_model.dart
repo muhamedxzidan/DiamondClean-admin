@@ -19,10 +19,9 @@ class CashboxExpenseModel {
     this.createdBy,
   });
 
-  factory CashboxExpenseModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory CashboxExpenseModel.fromMap(String id, Map<String, dynamic> data) {
     return CashboxExpenseModel(
-      id: doc.id,
+      id: id,
       title: data['title'] as String? ?? '',
       amount: (data['amount'] as num?)?.toDouble() ?? 0,
       category: ExpenseCategory.fromValue(data['category'] as String?),
@@ -32,6 +31,9 @@ class CashboxExpenseModel {
           : DateTime.now(),
     );
   }
+
+  factory CashboxExpenseModel.fromFirestore(DocumentSnapshot doc) =>
+      CashboxExpenseModel.fromMap(doc.id, doc.data() as Map<String, dynamic>);
 
   Map<String, dynamic> toFirestore() => {
     'title': title,

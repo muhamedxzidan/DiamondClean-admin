@@ -1,3 +1,5 @@
+import 'package:diamond_clean/features/cashbox/data/models/cashbox_expense_model.dart'
+    as diamond_clean_expense;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,7 +29,10 @@ class CashboxExpensesSection extends StatelessWidget {
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         title: Row(
           children: [
-            Text(AppStrings.cashboxExpenseHistory, style: theme.textTheme.titleMedium),
+            Text(
+              AppStrings.cashboxExpenseHistory,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -53,38 +58,14 @@ class CashboxExpensesSection extends StatelessWidget {
                 if (state.sessionExpenseEntries.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    child: EmptyStateWidget(message: AppStrings.cashboxNoExpenses),
+                    child: EmptyStateWidget(
+                      message: AppStrings.cashboxNoExpenses,
+                    ),
                   )
                 else
                   ...state.sessionExpenseEntries.map(
-                    (expense) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: CustomCard(
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(expense.title),
-                          subtitle: Text(expense.createdBy ?? ''),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(expense.amount.toStringAsFixed(2)),
-                              IconButton(
-                                onPressed: () => showCashboxExpenseDialog(
-                                  context,
-                                  cubit,
-                                  expense: expense,
-                                ),
-                                icon: const Icon(Icons.edit_outlined),
-                              ),
-                              IconButton(
-                                onPressed: () => cubit.deleteExpense(expense.id),
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    (expense) =>
+                        CashboxExpenseListItem(expense: expense, cubit: cubit),
                   ),
                 const SizedBox(height: 8),
                 Align(
@@ -99,6 +80,46 @@ class CashboxExpensesSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class CashboxExpenseListItem extends StatelessWidget {
+  final diamond_clean_expense.CashboxExpenseModel expense;
+  final CashboxCubit cubit;
+
+  const CashboxExpenseListItem({
+    super.key,
+    required this.expense,
+    required this.cubit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: CustomCard(
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(expense.title),
+          subtitle: Text(expense.createdBy ?? ''),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(expense.amount.toStringAsFixed(2)),
+              IconButton(
+                onPressed: () =>
+                    showCashboxExpenseDialog(context, cubit, expense: expense),
+                icon: const Icon(Icons.edit_outlined),
+              ),
+              IconButton(
+                onPressed: () => cubit.deleteExpense(expense.id),
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -44,10 +44,10 @@ class _LoginFormState extends State<LoginForm> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     context.read<AuthCubit>().login(
-          _emailController.text.trim(),
-          _passwordController.text,
-          rememberMe: _rememberMe,
-        );
+      _emailController.text.trim(),
+      _passwordController.text,
+      rememberMe: _rememberMe,
+    );
   }
 
   @override
@@ -73,10 +73,9 @@ class _LoginFormState extends State<LoginForm> {
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.email_outlined),
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty)
-                    ? AppStrings.fieldRequired
-                    : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? AppStrings.fieldRequired
+                : null,
             onFieldSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 16),
@@ -94,15 +93,13 @@ class _LoginFormState extends State<LoginForm> {
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                 ),
-                onPressed: () => setState(
-                  () => _obscurePassword = !_obscurePassword,
-                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            validator: (value) =>
-                (value == null || value.isEmpty)
-                    ? AppStrings.fieldRequired
-                    : null,
+            validator: (value) => (value == null || value.isEmpty)
+                ? AppStrings.fieldRequired
+                : null,
             onFieldSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 16),
@@ -115,6 +112,11 @@ class _LoginFormState extends State<LoginForm> {
           ),
           const SizedBox(height: 24),
           BlocBuilder<AuthCubit, AuthState>(
+            buildWhen: (previous, current) {
+              final wasLoading = previous is AuthLoading;
+              final isLoading = current is AuthLoading;
+              return wasLoading != isLoading;
+            },
             builder: (context, state) {
               final isLoading = state is AuthLoading;
               return FilledButton(

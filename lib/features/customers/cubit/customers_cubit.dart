@@ -17,8 +17,9 @@ class CustomersCubit extends Cubit<CustomersState> {
 
   CustomersCubit(this._dataSource) : super(const CustomersInitial());
 
-  void listenToCustomers() {
+  Future<void> listenToCustomers() async {
     emit(const CustomersLoading());
+    await _subscription?.cancel();
     _subscription = _dataSource.watchCustomers().listen((customers) {
       _currentCustomers = customers;
       emit(CustomersLoaded(customers));

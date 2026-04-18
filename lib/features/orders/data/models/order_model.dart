@@ -73,14 +73,13 @@ class OrderModel {
     return '$code - $invoiceNumber';
   }
 
-  factory OrderModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory OrderModel.fromMap(String id, Map<String, dynamic> data) {
     final categoryName = data['categoryName'] as String? ?? '';
 
     final items = parseItems(data['items']);
 
     return OrderModel(
-      id: doc.id,
+      id: id,
       customerCode: data['customerCode'] as String? ?? '',
       customerName: data['customerName'] as String? ?? '',
       customerPhone:
@@ -107,6 +106,9 @@ class OrderModel {
           : DateTime.now(),
     );
   }
+
+  factory OrderModel.fromFirestore(DocumentSnapshot doc) =>
+      OrderModel.fromMap(doc.id, doc.data() as Map<String, dynamic>);
 
   Map<String, dynamic> toFirestore() => {
     'customerCode': customerCode,

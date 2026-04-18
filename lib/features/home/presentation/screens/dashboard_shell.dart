@@ -38,6 +38,7 @@ class DashboardShell extends StatefulWidget {
 
 class _DashboardShellState extends State<DashboardShell> {
   int _selectedIndex = 0;
+  bool _isDestinationChangeInProgress = false;
 
   late final CustomersCubit _customersCubit;
   late final OrdersCubit _ordersCubit;
@@ -109,25 +110,33 @@ class _DashboardShellState extends State<DashboardShell> {
   );
 
   Future<void> _onDestinationSelected(int index) async {
-    if (_selectedIndex == index) {
+    if (_selectedIndex == index || _isDestinationChangeInProgress) {
       return;
     }
 
-    if (index == 5 || index == 6) {
-      final ownerPin = await _cashboxDataSource.getOwnerPin();
-      if (!mounted) {
-        return;
-      }
-      final granted = await requestCashboxFeatureAccess(
-        context,
-        ownerPin: ownerPin,
-      );
-      if (!granted || !mounted) {
-        return;
-      }
-    }
+    _isDestinationChangeInProgress = true;
 
-    setState(() => _selectedIndex = index);
+    try {
+      if (index == 5 || index == 6) {
+        final ownerPin = await _cashboxDataSource.getOwnerPin();
+        if (!mounted) {
+          return;
+        }
+        final granted = await requestCashboxFeatureAccess(
+          context,
+          ownerPin: ownerPin,
+        );
+        if (!granted || !mounted) {
+          return;
+        }
+      }
+
+      if (mounted) {
+        setState(() => _selectedIndex = index);
+      }
+    } finally {
+      _isDestinationChangeInProgress = false;
+    }
   }
 
   @override

@@ -51,6 +51,10 @@ class EmployeeSaved extends EmployeesState {
   const EmployeeSaved();
 }
 
+class EmployeeDeleted extends EmployeesState {
+  const EmployeeDeleted();
+}
+
 class AddingEmployeeAdvance extends EmployeesState {
   const AddingEmployeeAdvance();
 }

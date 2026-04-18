@@ -46,7 +46,12 @@ class _CarFormDialogState extends State<CarFormDialog> {
     final password = _passwordController.text.trim();
     final driverName = _driverNameController.text.trim();
     if (_isEditing) {
-      context.read<CarCubit>().updateCar(widget.car!.id, carNumber, password, driverName);
+      context.read<CarCubit>().updateCar(
+        widget.car!.id,
+        carNumber,
+        password,
+        driverName,
+      );
     } else {
       context.read<CarCubit>().addCar(carNumber, password, driverName);
     }
@@ -80,8 +85,9 @@ class _CarFormDialogState extends State<CarFormDialog> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.directions_car_outlined),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? AppStrings.fieldRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -93,13 +99,17 @@ class _CarFormDialogState extends State<CarFormDialog> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? AppStrings.fieldRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -109,8 +119,9 @@ class _CarFormDialogState extends State<CarFormDialog> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? AppStrings.fieldRequired : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? AppStrings.fieldRequired
+                      : null,
                   onFieldSubmitted: (_) => _submit(),
                 ),
               ],
@@ -123,6 +134,11 @@ class _CarFormDialogState extends State<CarFormDialog> {
             child: const Text(AppStrings.cancel),
           ),
           BlocBuilder<CarCubit, CarState>(
+            buildWhen: (previous, current) {
+              final wasLoading = previous is CarOperationLoading;
+              final isLoading = current is CarOperationLoading;
+              return wasLoading != isLoading;
+            },
             builder: (context, state) {
               final isLoading = state is CarOperationLoading;
               return FilledButton(

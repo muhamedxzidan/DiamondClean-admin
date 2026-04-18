@@ -23,6 +23,7 @@ class TreasuryReportModel {
   // Balance
   final double openingBalance;
   final double remainingOrdersValue;
+  final double totalWithdrawn;
 
   const TreasuryReportModel({
     required this.startDate,
@@ -39,12 +40,18 @@ class TreasuryReportModel {
     required this.expensesByCategory,
     required this.openingBalance,
     required this.remainingOrdersValue,
+    this.totalWithdrawn = 0,
   });
 
-  double get totalIncome => completedOrdersRevenue + deliveryFeesRevenue;
+  double get totalIncome => cashRevenue + electronicRevenue;
+
+  double get explicitWithdrawals =>
+      expensesByCategory[ExpenseCategory.withdrawal] ?? 0;
 
   double get totalExpenses =>
-      expensesByCategory.values.fold(0, (sum, amount) => sum + amount);
+      expensesByCategory.entries
+          .where((e) => e.key != ExpenseCategory.withdrawal)
+          .fold(0.0, (sum, e) => sum + e.value);
 
   double get totalSalaries =>
       expensesByCategory[ExpenseCategory.salary] ?? 0;
@@ -54,5 +61,5 @@ class TreasuryReportModel {
   double get netProfit => totalIncome - totalExpenses;
 
   double get closingCashBalance =>
-      openingBalance + cashRevenue - totalExpenses;
+      openingBalance + cashRevenue - totalExpenses - explicitWithdrawals - totalWithdrawn;
 }

@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 
 import '../data/datasources/treasury_report_remote_data_source.dart';
+import '../data/models/treasury_report_model.dart';
 import 'treasury_report_state.dart';
 
 class TreasuryReportCubit extends Cubit<TreasuryReportState> {
   final TreasuryReportRemoteDataSource _dataSource;
-  StreamSubscription<dynamic>? _reportSubscription;
+  StreamSubscription<TreasuryReportModel>? _reportSubscription;
 
   TreasuryReportCubit(this._dataSource) : super(const TreasuryReportInitial());
 
@@ -16,20 +17,40 @@ class TreasuryReportCubit extends Cubit<TreasuryReportState> {
     emit(const TreasuryReportLoading());
 
     try {
-      _reportSubscription = _dataSource.watchReport(startDate, endDate).listen(
-        (report) async {
-          // Fetch audit logs for the same date range
-          final auditLogs = await _dataSource.getAuditLogsByDateRange(
-            startDate,
-            endDate,
+      _reportSubscription = _dataSource
+          .watchReport(startDate, endDate)
+          .listen(
+            (report) => _handleReport(report, startDate, endDate),
+            onError: _emitError,
           );
-          emit(TreasuryReportLoaded(report, auditLogs: auditLogs));
-        },
-        onError: (Object error) => emit(TreasuryReportError(error.toString())),
-      );
     } catch (error) {
-      emit(TreasuryReportError(error.toString()));
+      _emitError(error);
     }
+  }
+
+  Future<void> _handleReport(
+    TreasuryReportModel report,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final auditLogs = await _dataSource.getAuditLogsByDateRange(
+      startDate,
+      endDate,
+    );
+
+    if (isClosed) {
+      return;
+    }
+
+    emit(TreasuryReportLoaded(report, auditLogs: auditLogs));
+  }
+
+  void _emitError(Object error) {
+    if (isClosed) {
+      return;
+    }
+
+    emit(TreasuryReportError(error.toString()));
   }
 
   @override

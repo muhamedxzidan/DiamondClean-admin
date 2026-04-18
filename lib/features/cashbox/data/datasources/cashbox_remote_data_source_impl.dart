@@ -146,7 +146,7 @@ class CashboxRemoteDataSourceImpl implements CashboxRemoteDataSource {
     if ((closingBalance - calculatedClosing).abs() > 0.01) {
       throw Exception(
         'Closing balance mismatch: $closingBalance != '
-        '${openingBalance} + ${totalRevenue} - ${totalExpenses} = ${calculatedClosing}',
+        '$openingBalance + $totalRevenue - $totalExpenses = $calculatedClosing',
       );
     }
 

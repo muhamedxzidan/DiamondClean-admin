@@ -138,6 +138,7 @@ class ReportExpensesSection extends StatelessWidget {
     ExpenseCategory.transport => Icons.local_shipping_outlined,
     ExpenseCategory.rent => Icons.home_outlined,
     ExpenseCategory.utilities => Icons.electrical_services_outlined,
+    ExpenseCategory.withdrawal => Icons.account_balance_wallet_outlined,
     ExpenseCategory.other => Icons.receipt_outlined,
   };
 
@@ -148,6 +149,7 @@ class ReportExpensesSection extends StatelessWidget {
     ExpenseCategory.transport => Colors.orange,
     ExpenseCategory.rent => Colors.brown,
     ExpenseCategory.utilities => Colors.amber.shade700,
+    ExpenseCategory.withdrawal => Colors.teal,
     ExpenseCategory.other => Colors.grey,
   };
 }

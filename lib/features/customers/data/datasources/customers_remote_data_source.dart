@@ -31,11 +31,9 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
         .collection('customers')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => CustomerModel.fromFirestore(doc))
-              .toList();
-        });
+        .map(
+          (snapshot) => snapshot.docs.map(CustomerModel.fromFirestore).toList(),
+        );
   }
 
   @override
@@ -133,9 +131,7 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return query.docs
-          .map((doc) => CustomerTransactionModel.fromFirestore(doc))
-          .toList();
+      return query.docs.map(CustomerTransactionModel.fromFirestore).toList();
     } catch (e) {
       throw Exception('Failed to get customer transactions: $e');
     }

@@ -20,8 +20,7 @@ Future<RemainingPaymentResult?> showRemainingPaymentDialog(
 }) {
   return showDialog<RemainingPaymentResult>(
     context: context,
-    builder: (_) =>
-        _RemainingPaymentDialog(remainingAmount: remainingAmount),
+    builder: (_) => _RemainingPaymentDialog(remainingAmount: remainingAmount),
   );
 }
 
@@ -72,10 +71,12 @@ class _RemainingPaymentDialogState extends State<_RemainingPaymentDialog> {
           ...OrderPaymentMethod.values.map(
             (method) => RadioListTile<OrderPaymentMethod>(
               value: method,
+              // ignore: deprecated_member_use
               groupValue: _selectedMethod,
               title: Text(_paymentLabel(method)),
               dense: true,
               contentPadding: EdgeInsets.zero,
+              // ignore: deprecated_member_use
               onChanged: (v) {
                 if (v != null) setState(() => _selectedMethod = v);
               },
