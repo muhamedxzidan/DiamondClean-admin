@@ -8,6 +8,7 @@ import '../../cubit/cashbox_cubit.dart';
 import '../../cubit/cashbox_state.dart';
 import '../widgets/cashbox_close_sheet.dart';
 import '../widgets/cashbox_app_bar_actions.dart';
+import '../widgets/cashbox_day_ended_dialog.dart';
 import '../widgets/cashbox_loaded_content.dart';
 import '../widgets/cashbox_opening_balance_dialog.dart';
 import '../widgets/cashbox_pin_dialog.dart';
@@ -24,6 +25,7 @@ class CashboxScreen extends StatefulWidget {
 
 class _CashboxScreenState extends State<CashboxScreen> {
   bool _isUnlocked = false;
+  bool _isDayEndedDialogShowing = false;
   late ScaffoldMessengerState _scaffoldMessenger;
 
   @override
@@ -126,7 +128,11 @@ class _CashboxScreenState extends State<CashboxScreen> {
         ],
       ),
       body: BlocConsumer<CashboxCubit, CashboxState>(
-        listenWhen: (previous, current) => current is CashboxError,
+        listenWhen: (previous, current) {
+          if (current is CashboxError) return true;
+          if (current is CashboxLoaded && current.isDayEnded) return true;
+          return false;
+        },
         buildWhen: (previous, current) {
           if (previous.runtimeType != current.runtimeType) return true;
           if (previous is CashboxLoaded && current is CashboxLoaded) {
@@ -144,6 +150,11 @@ class _CashboxScreenState extends State<CashboxScreen> {
             _scaffoldMessenger.showSnackBar(
               SnackBar(content: Text(state.message)),
             );
+          }
+          if (state is CashboxLoaded &&
+              state.isDayEnded &&
+              !_isDayEndedDialogShowing) {
+            _showDayEndedDialog(state);
           }
         },
         builder: (context, state) => switch (state) {
@@ -168,6 +179,40 @@ class _CashboxScreenState extends State<CashboxScreen> {
       onRefresh: () async =>
           context.read<CashboxCubit>().selectDay(state.selectedDay),
       onClosePressed: () => _showCloseBottomSheet(state),
+    );
+  }
+
+  void _showDayEndedDialog(CashboxLoaded state) {
+    _isDayEndedDialogShowing = true;
+    CashboxDayEndedDialog.show(
+      context,
+      state: state,
+      onCloseAndCarryOver: () async {
+        Navigator.pop(context);
+        _isDayEndedDialogShowing = false;
+
+        final cubit = context.read<CashboxCubit>();
+        final carryOverBalance = state.sessionBalance;
+
+        await cubit.closeCashbox('إقفال تلقائي - منتصف الليل');
+        await cubit.saveOpeningBalance(carryOverBalance, 'ترحيل تلقائي');
+        cubit.selectDay(DateTime.now());
+      },
+      onCloseAndZero: () async {
+        Navigator.pop(context);
+        _isDayEndedDialogShowing = false;
+
+        final cubit = context.read<CashboxCubit>();
+
+        await cubit.closeCashbox('تصفير - منتصف الليل');
+        await cubit.saveOpeningBalance(0, 'تصفير تلقائي');
+        cubit.selectDay(DateTime.now());
+      },
+      onDismiss: () {
+        Navigator.pop(context);
+        _isDayEndedDialogShowing = false;
+        context.read<CashboxCubit>().dismissDayEndedNotification();
+      },
     );
   }
 }

@@ -219,7 +219,7 @@ class _DashboardShellState extends State<DashboardShell> {
   Widget _buildCompactLayout(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Diamond Clean'),
+        title: const Text('demo clean admin'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),

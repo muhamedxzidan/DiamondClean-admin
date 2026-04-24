@@ -63,8 +63,8 @@ class _OrdersLoadedContentState extends State<OrdersLoadedContent> {
     return widget.orders.where((order) {
       final matchesSearch =
           widget.searchQuery.isEmpty ||
-          _matches(order.customerCode) ||
-          _matches(order.customerPhone);
+          _matchesPhone(order.customerPhone) ||
+          _matchesInvoice(order.invoiceNumber);
       final matchesFilter = OrdersStatusFilter.matchesFilter(
         order,
         widget.selectedFilter,
@@ -73,8 +73,12 @@ class _OrdersLoadedContentState extends State<OrdersLoadedContent> {
     }).toList();
   }
 
-  bool _matches(String value) =>
+  bool _matchesPhone(String value) =>
       value.toLowerCase().contains(widget.searchQuery);
+
+  bool _matchesInvoice(int? invoiceNumber) =>
+      invoiceNumber != null &&
+      invoiceNumber.toString().contains(widget.searchQuery);
 
   bool get _hasActiveFilters =>
       widget.searchQuery.isNotEmpty ||

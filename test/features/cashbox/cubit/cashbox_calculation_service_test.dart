@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const service = CashboxCalculationService();
 
-  test('sessionSummary uses opening + cash income - session expenses', () {
+  test('sessionSummary uses opening + all income - session expenses', () {
     final selectedDay = DateTime(2026, 4, 11);
     final settings = CashboxSettingsModel(
       openingBalance: 100,
@@ -81,11 +81,12 @@ void main() {
       todayStart: DateTime(2026, 4, 11),
     );
 
-    expect(summary.incomeEntries.length, 2);
-    expect(summary.expenseEntries.length, 1);
-    expect(summary.revenue, 320);
-    expect(summary.expensesTotal, 40);
-    expect(summary.balance, 260);
+    // Day starts at midnight: all same-day entries are included
+    expect(summary.incomeEntries.length, 3); // cash-1, card-1, before-open
+    expect(summary.expenseEntries.length, 2); // expense-session, expense-before-open
+    expect(summary.revenue, 370); // 200 + 120 + 50
+    expect(summary.expensesTotal, 70); // 40 + 30
+    expect(summary.balance, 400); // 100 + 370 - 70
   });
 
   test('daily lists include all same-day entries regardless of openedAt', () {

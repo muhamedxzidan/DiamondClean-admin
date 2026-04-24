@@ -18,6 +18,9 @@ class OrdersCubit extends Cubit<OrdersState> {
   StreamSubscription<List<OrderModel>>? _subscription;
   List<OrderModel> _currentOrders = [];
   final Set<String> _pendingInvoiceIds = {};
+  final Set<String> _syncedCustomerOrderIds = {};
+  bool _assigningInvoiceNumbers = false;
+  bool _syncingCustomers = false;
 
   OrdersCubit(
     this._dataSource,
@@ -33,33 +36,67 @@ class OrdersCubit extends Cubit<OrdersState> {
       _currentOrders = orders;
       emit(OrdersLoaded(orders));
       _assignMissingInvoiceNumbers(orders);
+      _syncCustomersForNewOrders(orders);
     }, onError: (Object e) => emit(OrdersError(e.toString())));
   }
 
-  void _assignMissingInvoiceNumbers(List<OrderModel> orders) {
-    final activePendingIds = <String>{};
-
-    for (final order in orders) {
-      if (order.invoiceNumber != null) {
-        continue;
+  Future<void> _syncCustomersForNewOrders(List<OrderModel> orders) async {
+    if (_syncingCustomers) return;
+    _syncingCustomers = true;
+    try {
+      for (final order in orders) {
+        if (_syncedCustomerOrderIds.contains(order.id)) continue;
+        if (order.customerPhone.trim().isEmpty) continue;
+        try {
+          await _customersCubit.saveCustomerFromOrder(
+            orderId: order.id,
+            orderTotal: order.totalPrice ?? 0,
+            deliveryFee: order.deliveryFee,
+            itemCount: order.items.fold<int>(
+              0,
+              (count, item) => count + item.quantity,
+            ),
+            status: order.status.name,
+            orderDate: order.createdAt,
+            name: order.customerName,
+            phone: order.customerPhone,
+            address: order.address,
+          );
+          _syncedCustomerOrderIds.add(order.id);
+        } catch (e) {
+          debugPrint('Customer sync failed for order ${order.id}: $e');
+        }
       }
-
-      activePendingIds.add(order.id);
-
-      if (_pendingInvoiceIds.contains(order.id)) {
-        continue;
-      }
-
-      _pendingInvoiceIds.add(order.id);
-      _dataSource.assignInvoiceNumber(order.id).catchError((e) {
-        _pendingInvoiceIds.remove(order.id);
-        debugPrint('Invoice number assignment failed: $e');
-      });
+    } finally {
+      _syncingCustomers = false;
     }
+  }
 
-    _pendingInvoiceIds
-      ..clear()
-      ..addAll(activePendingIds);
+  Future<void> _assignMissingInvoiceNumbers(List<OrderModel> orders) async {
+    if (_assigningInvoiceNumbers) return;
+
+    final missing = orders.where((o) => o.invoiceNumber == null).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    final toAssign = missing
+        .where((o) => !_pendingInvoiceIds.contains(o.id))
+        .toList();
+    if (toAssign.isEmpty) return;
+
+    _assigningInvoiceNumbers = true;
+    try {
+      for (final order in toAssign) {
+        _pendingInvoiceIds.add(order.id);
+        try {
+          await _dataSource.assignInvoiceNumber(order.id);
+        } catch (e) {
+          _pendingInvoiceIds.remove(order.id);
+          debugPrint('Invoice number assignment failed: $e');
+        }
+      }
+    } finally {
+      _assigningInvoiceNumbers = false;
+    }
   }
 
   Future<void> updateItemPricing(
@@ -171,22 +208,20 @@ class OrdersCubit extends Cubit<OrdersState> {
           order.includeInCashbox &&
           _cashboxDataSource != null) {
         try {
-          final total = order.totalPrice ?? 0;
-          final newPaid = order.paidAmount + amount;
-          final remaining = (total - newPaid)
-              .clamp(0, double.infinity)
-              .toDouble();
+          // Use unique ID per remaining payment to prevent overwrite
+          final paymentId =
+              '${order.id}_rem_${DateTime.now().millisecondsSinceEpoch}';
 
           await _cashboxDataSource.recordOrderIncome(
             CashboxIncomeModel(
-              orderId: '${order.id}_remaining',
+              orderId: paymentId,
               orderTotal: amount,
               deliveryFee: 0,
               customerName: order.customerName,
               customerPhone: order.customerPhone,
               paymentMethod: paymentMethod,
               includeInCashbox: order.includeInCashbox,
-              remainingAmount: remaining,
+              remainingAmount: 0,
               createdAt: DateTime.now(),
             ),
           );
@@ -235,11 +270,6 @@ class OrdersCubit extends Cubit<OrdersState> {
   }) async {
     if (!order.includeInCashbox || _cashboxDataSource == null) return;
     try {
-      final total = order.totalPrice ?? 0;
-      final remaining = (total - paidAmount)
-          .clamp(0, double.infinity)
-          .toDouble();
-
       await _cashboxDataSource.recordOrderIncome(
         CashboxIncomeModel(
           orderId: order.id,
@@ -249,7 +279,7 @@ class OrdersCubit extends Cubit<OrdersState> {
           customerPhone: order.customerPhone,
           paymentMethod: paymentMethod ?? order.paymentMethod?.name,
           includeInCashbox: order.includeInCashbox,
-          remainingAmount: remaining,
+          remainingAmount: 0,
           createdAt: DateTime.now(),
         ),
       );

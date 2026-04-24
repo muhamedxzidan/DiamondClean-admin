@@ -1,6 +1,6 @@
 class AppStrings {
   // App
-  static const String appName = 'Diamond Clean — Admin';
+  static const String appName = 'demo clean admin';
 
   // Auth
   static const String loginTitle = 'تسجيل الدخول';
@@ -97,7 +97,7 @@ class AppStrings {
 
   // Orders
   static const String ordersTitle = 'الطلبات';
-  static const String ordersSearchHint = 'ابحث برقم الهاتف أو الكود';
+  static const String ordersSearchHint = 'ابحث برقم الفاتورة أو رقم الهاتف';
   static const String noOrdersFound = 'لا توجد طلبات';
   static const String noMatchingOrders = 'لا توجد طلبات مطابقة';
   static const String deliveryFee = 'التوصيل الدليفري';
@@ -157,7 +157,8 @@ class AppStrings {
   static const String confirmRemainingPayment = 'تأكيد سداد المتبقي';
   static const String paidLabel = 'المدفوع';
   static const String invalidPaidAmount = 'المبلغ المدفوع غير صحيح';
-  static const String paidAmountExceedsTotal = 'المبلغ المدفوع أكبر من الإجمالي';
+  static const String paidAmountExceedsTotal =
+      'المبلغ المدفوع أكبر من الإجمالي';
 
   // Cashbox
   static const String cashboxTitle = 'الخزنة';

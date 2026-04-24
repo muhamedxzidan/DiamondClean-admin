@@ -46,7 +46,7 @@ class ReportCashSummarySection extends StatelessWidget {
                 ),
                 ReportSummaryCard(
                   title: AppStrings.treasuryReportTotalIncome,
-                  value: '${formatter.format(report.cashRevenue)} ${AppStrings.currency}',
+                  value: '${formatter.format(report.totalIncome)} ${AppStrings.currency}',
                   backgroundColor: Colors.green.shade50,
                   textColor: Colors.green.shade700,
                   icon: Icons.arrow_downward,

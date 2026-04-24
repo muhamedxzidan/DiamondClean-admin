@@ -89,17 +89,13 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
     final currentPaid = (data['paidAmount'] as num?)?.toDouble() ?? 0;
     final newTotal = currentPaid + paidAmount;
 
-    final totalItems =
-        (data['items'] as List?)?.fold<double>(
-          0,
-          (acc, item) =>
-              acc +
-              (((item as Map<String, dynamic>)['price'] as num?)?.toDouble() ??
-                  0),
-        ) ??
-        0;
+    final items = OrderModel.parseItems(data['items']);
+    final itemsTotal = items.fold<double>(
+      0,
+      (acc, item) => acc + (item.itemTotal ?? 0),
+    );
     final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0;
-    final totalPrice = totalItems + deliveryFee;
+    final totalPrice = itemsTotal + deliveryFee;
 
     await _collection.doc(orderId).update({
       'paidAmount': newTotal,

@@ -50,22 +50,22 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAyrKk2ZBWPGSZ-bJQmMZoTchbLjw6Olgo',
-    appId: '1:718127856617:web:f5d0fbe948f049171c6978',
-    messagingSenderId: '718127856617',
-    projectId: 'daimound-clean',
-    authDomain: 'daimound-clean.firebaseapp.com',
-    storageBucket: 'daimound-clean.firebasestorage.app',
-    measurementId: 'G-MLSNEP423X',
+    apiKey: 'AIzaSyAJFhb9aysrzPAUdBydu4Z8Own_OEnTnas',
+    appId: '1:933662549011:web:a06bad719eab40239ccbe6',
+    messagingSenderId: '933662549011',
+    projectId: 'fir-clean-6ed6c',
+    authDomain: 'fir-clean-6ed6c.firebaseapp.com',
+    storageBucket: 'fir-clean-6ed6c.firebasestorage.app',
+    measurementId: 'G-MNZJZ20TFX',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAyrKk2ZBWPGSZ-bJQmMZoTchbLjw6Olgo',
-    appId: '1:718127856617:web:43de9f132f98cdec1c6978',
-    messagingSenderId: '718127856617',
-    projectId: 'daimound-clean',
-    authDomain: 'daimound-clean.firebaseapp.com',
-    storageBucket: 'daimound-clean.firebasestorage.app',
-    measurementId: 'G-BC91VW8GEH',
+    apiKey: 'AIzaSyAJFhb9aysrzPAUdBydu4Z8Own_OEnTnas',
+    appId: '1:933662549011:web:a06bad719eab40239ccbe6',
+    messagingSenderId: '933662549011',
+    projectId: 'fir-clean-6ed6c',
+    authDomain: 'fir-clean-6ed6c.firebaseapp.com',
+    storageBucket: 'fir-clean-6ed6c.firebasestorage.app',
+    measurementId: 'G-MNZJZ20TFX',
   );
 }

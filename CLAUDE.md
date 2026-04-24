@@ -1,3 +1,100 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project snapshot
+
+Flutter admin app ("diamond_clean") for managing orders, customers, employees, cars, categories, products, cashbox/treasury, and related operations for a cleaning business. Firestore is the primary data source; Firebase Auth handles login; Flutter Web is deployed to Firebase Hosting. UI is Arabic/RTL (Material Design 3).
+
+- Dart SDK: `^3.10.3`, Flutter stable.
+- State: `flutter_bloc` / Cubit (no Bloc event classes). States are sealed classes with exhaustive `switch` pattern matching (see `_AuthGate` in `lib/main.dart`).
+- Data: `cloud_firestore`, `firebase_auth`, `flutter_secure_storage` (used for local auth caching).
+- **No** code generation (`freezed`, `build_runner`) is used — rely on Dart 3 sealed classes, records, and pattern matching instead.
+- **No** domain layer, use cases, repositories, or `Either<Failure, Success>`. The 2-layer architecture below is strict.
+
+## Commands
+
+Run from repo root.
+
+```bash
+flutter pub get                                  # install deps
+flutter run -d chrome                            # dev on web
+flutter run                                      # dev on default device
+flutter analyze                                  # lint (uses analysis_options.yaml → flutter_lints)
+dart format .                                    # format
+
+flutter test                                     # run all tests
+flutter test test/features/orders                # run one feature's tests
+flutter test test/core/utils/whatsapp_invoice_service_test.dart   # run one file
+flutter test --name "substring of test name"     # run a single test by name
+
+flutter build web --release                      # build for hosting
+./deploy.sh                                      # build + firebase deploy --only hosting
+```
+
+Firebase project is `fir-clean-6ed6c` (see `firebase.json`, `lib/firebase_options.dart`). Hosting serves `build/web` with SPA rewrite to `/index.html`.
+
+## Architecture
+
+### 2-layer feature architecture
+
+Every feature under `lib/features/<feature>/` follows the same shape:
+
+```
+<feature>/
+  cubit/          business logic, state emission; sealed state class
+  data/
+    datasources/  *_remote_data_source.dart (abstract) + *_impl.dart (Firestore/Auth)
+    models/       DTOs with fromFirestore / toMap
+  presentation/
+    screens/      route-level widgets
+    widgets/      feature-local widgets
+  core/           (optional) feature-local pure helpers — see orders/core/
+```
+
+Flow is one-way: **UI → Cubit → DataSource → Firebase**, and errors bubble back the same path. UI never imports `cloud_firestore`, `firebase_auth`, or any datasource; only Cubit states cross into UI. Cubit never touches Firestore directly.
+
+Current features: `auth`, `cars`, `cashbox`, `categories`, `customers`, `employees`, `home`, `orders`, `products`, `treasury_report`.
+
+### App wiring
+
+- `lib/main.dart` boots Firebase, provides a single top-level `AuthCubit` via `BlocProvider`, and `_AuthGate` switches between `LoginScreen` and `DashboardShell` using pattern matching on `AuthState`.
+- Navigation is **not** centralized via a router. `lib/core/routes/app_router.dart` is intentionally empty — auth routing lives in `_AuthGate`, everything else uses `Navigator.push` / `showDialog` from widgets. Do not introduce `go_router` or a route table unless the user asks.
+- Each non-auth feature provides its own `Cubit` scoped where it is used (typically at screen level via `BlocProvider`), not globally.
+
+### Data layer conventions
+
+- Collection names live in `lib/core/constants/firebase_constants.dart` — reference them, don't hardcode strings.
+- Datasources expose an abstract interface (`*_remote_data_source.dart`) and a Firestore impl (`*_remote_data_source_impl.dart`). Cubits depend on the interface for testability with `fake_cloud_firestore`.
+- Models use `fromFirestore(DocumentSnapshot)` / `fromMap` / `toMap` — not `json_serializable`.
+- Streams (`watch*`) are preferred for live collections; one-shot fetches return `Future<...>`.
+
+### Core (shared) layer
+
+`lib/core/` holds anything reused across features. Put shared code here before duplicating.
+
+- `constants/` — `AppStrings` (Arabic UI copy), `AppDimensions`, `FirebaseConstants`.
+- `widgets/` — `CustomButton`, `CustomTextField`, `CustomCard`, `CustomDialog`, `LoadingWidget`, `ErrorWidget`, `EmptyStateWidget`. Exported via `widgets.dart`. Prefer these over building ad-hoc buttons/fields; see `lib/core/UI_SYSTEM.md` for usage.
+- `extensions/` — `BuildContext` helpers (`context.textTheme`, `context.colorScheme`, `context.isSmallScreen`, etc.) and widget chaining (`.paddingAll`, `.center`).
+- `theme/app_theme.dart` — Material 3 theme. Do not hardcode colors/paddings; use theme + `AppDimensions`.
+- `utils/` — cross-feature pure helpers (e.g. `whatsapp_invoice_service.dart`, `cashbox_validator.dart`, `treasury_log_entry_mapper.dart`, `pricing_display_helper.dart`). These are the canonical place for business logic that is shared across cubits.
+- `models/treasury_log_entry.dart` — shared domain-ish models used by more than one feature.
+
+### Tests
+
+Mirror the `lib/` tree under `test/` (`test/features/<feature>/...`, `test/core/utils/...`). Firestore is faked with `fake_cloud_firestore`; inject it into the `*RemoteDataSourceImpl` under test. Keep tests deterministic — no real clock/network. Bug fixes must land with a reproducing test (rule 22).
+
+### Things to avoid in this repo
+
+- Don't introduce a repository layer, use cases, or `Either` types (rule 4).
+- Don't add `freezed` / `json_serializable` / `build_runner` (rule 16).
+- Don't add packages without approval, and never hand-edit `pubspec.lock` (rule 14).
+- Don't put Firestore calls in widgets or cubits — only in datasources (rule 23).
+- Don't centralize routing; keep the current `_AuthGate` + `Navigator.push` pattern unless asked.
+- Don't hardcode strings visible to users — route through `AppStrings` (Arabic/RTL).
+
+---
+
 # Project Global Engineering Rules
 
 ## 1) Clean code always

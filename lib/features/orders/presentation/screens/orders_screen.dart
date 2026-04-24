@@ -123,10 +123,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           OrdersSearchBar(
             controller: _searchController,
-            onChanged: (value) {
+            onSubmitted: (value) {
               setState(() => _searchQuery = value.trim().toLowerCase());
             },
-            searchQuery: _searchQuery,
+            onClear: () {
+              setState(() => _searchQuery = '');
+            },
           ),
           OrdersStatusFilter(
             selectedFilter: _selectedFilter,

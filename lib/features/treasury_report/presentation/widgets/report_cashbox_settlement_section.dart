@@ -42,7 +42,7 @@ class ReportCashboxSettlementSection extends StatelessWidget {
             _buildSettlementRow(
               context,
               label: AppStrings.treasuryReportTotalIncome,
-              value: report.cashRevenue,
+              value: report.totalIncome,
               formatter: formatter,
               color: Colors.green.shade700,
               showPlus: true,
@@ -54,7 +54,7 @@ class ReportCashboxSettlementSection extends StatelessWidget {
             _buildSettlementRow(
               context,
               label: 'الخزنة المتاحة',
-              value: report.openingBalance + report.cashRevenue,
+              value: report.openingBalance + report.totalIncome,
               formatter: formatter,
               color: Colors.purple.shade700,
               showPlus: false,

@@ -80,10 +80,15 @@ class CashboxRemoteDataSourceImpl implements CashboxRemoteDataSource {
 
   @override
   Future<void> recordOrderIncome(CashboxIncomeModel income) async {
-    await _firestore
+    final docRef = _firestore
         .collection(FirebaseConstants.cashboxIncomeCollection)
-        .doc(income.orderId)
-        .set(income.toFirestore(), SetOptions(merge: true));
+        .doc(income.orderId);
+
+    // Prevent double-entry: skip if already recorded
+    final existing = await docRef.get();
+    if (existing.exists) return;
+
+    await docRef.set(income.toFirestore());
   }
 
   @override

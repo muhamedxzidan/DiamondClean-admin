@@ -14,6 +14,8 @@ void main() {
       sessionIncomeEntries: const [],
       sessionExpenseEntries: const [],
       sessionRevenue: 0,
+      sessionCashRevenue: 0,
+      sessionElectronicRevenue: 0,
       sessionExpenses: 0,
       sessionBalance: 0,
       dailyIncomeEntries: [

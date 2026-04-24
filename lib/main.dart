@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import 'core/theme/app_theme.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
@@ -30,7 +29,7 @@ class DiamondCleanApp extends StatelessWidget {
         AuthLocalDataSource(const FlutterSecureStorage()),
       ),
       child: MaterialApp(
-        title: 'Diamond Clean — Admin',
+        title: 'demo clean admin',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const _AuthGate(),

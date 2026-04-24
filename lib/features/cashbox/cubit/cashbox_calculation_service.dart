@@ -7,6 +7,8 @@ typedef CashboxSessionSummary = ({
   List<CashboxIncomeModel> incomeEntries,
   List<CashboxExpenseModel> expenseEntries,
   double revenue,
+  double cashRevenue,
+  double electronicRevenue,
   double expensesTotal,
   double balance,
 });
@@ -22,23 +24,15 @@ class CashboxCalculationService {
         left.day == right.day;
   }
 
-  bool isViewingToday(DateTime selectedDay, DateTime todayStart) {
-    return isSameDay(selectedDay, todayStart);
-  }
-
-  bool isWithinSession({
+  /// Checks whether [createdAt] falls within the selected day.
+  /// A day always starts at midnight (00:00) and ends just before the
+  /// next midnight, regardless of when the cashbox was opened.
+  bool isWithinDay({
     required DateTime createdAt,
     required DateTime selectedDay,
-    required DateTime openedAt,
-    required DateTime todayStart,
   }) {
-    final normalizedSelectedDay = dayStart(selectedDay);
-    final sessionStart = isViewingToday(normalizedSelectedDay, todayStart)
-        ? openedAt
-        : normalizedSelectedDay;
-
-    return !createdAt.isBefore(sessionStart) &&
-        isSameDay(createdAt, normalizedSelectedDay);
+    final normalizedDay = dayStart(selectedDay);
+    return isSameDay(createdAt, normalizedDay);
   }
 
   List<CashboxIncomeModel> sessionIncomeEntries({
@@ -49,11 +43,9 @@ class CashboxCalculationService {
   }) {
     return incomeEntries.where((income) {
       return income.includeInCashbox &&
-          isWithinSession(
+          isWithinDay(
             createdAt: income.createdAt,
             selectedDay: selectedDay,
-            openedAt: settings.openedAt,
-            todayStart: todayStart,
           );
     }).toList();
   }
@@ -65,11 +57,9 @@ class CashboxCalculationService {
     required DateTime todayStart,
   }) {
     return expenses.where((expense) {
-      return isWithinSession(
+      return isWithinDay(
         createdAt: expense.createdAt,
         selectedDay: selectedDay,
-        openedAt: settings.openedAt,
-        todayStart: todayStart,
       );
     }).toList();
   }
@@ -146,14 +136,17 @@ class CashboxCalculationService {
     );
     final revenue = sumIncome(filteredIncomeEntries);
     final cashRevenue = sumCashIncome(filteredIncomeEntries);
+    final electronicRevenue = revenue - cashRevenue;
     final expensesTotal = sumExpenses(filteredExpenseEntries);
 
     return (
       incomeEntries: filteredIncomeEntries,
       expenseEntries: filteredExpenseEntries,
       revenue: revenue,
+      cashRevenue: cashRevenue,
+      electronicRevenue: electronicRevenue,
       expensesTotal: expensesTotal,
-      balance: settings.openingBalance + cashRevenue - expensesTotal,
+      balance: settings.openingBalance + revenue - expensesTotal,
     );
   }
 }

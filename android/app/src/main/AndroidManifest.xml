@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="diamond_clean"
+        android:label="demo clean admin"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

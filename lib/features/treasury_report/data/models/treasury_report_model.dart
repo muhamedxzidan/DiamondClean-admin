@@ -48,7 +48,12 @@ class TreasuryReportModel {
   double get explicitWithdrawals =>
       expensesByCategory[ExpenseCategory.withdrawal] ?? 0;
 
+  /// All expenses including withdrawals — everything that leaves the cashbox.
   double get totalExpenses =>
+      expensesByCategory.values.fold(0.0, (sum, v) => sum + v);
+
+  /// Expenses excluding withdrawals (for breakdown display).
+  double get operationalExpenses =>
       expensesByCategory.entries
           .where((e) => e.key != ExpenseCategory.withdrawal)
           .fold(0.0, (sum, e) => sum + e.value);
@@ -56,10 +61,11 @@ class TreasuryReportModel {
   double get totalSalaries =>
       expensesByCategory[ExpenseCategory.salary] ?? 0;
 
-  double get totalNonSalaryExpenses => totalExpenses - totalSalaries;
+  double get totalNonSalaryExpenses => operationalExpenses - totalSalaries;
 
   double get netProfit => totalIncome - totalExpenses;
 
+  /// Closing balance: all income (cash+electronic) - all expenses - closures withdrawn.
   double get closingCashBalance =>
-      openingBalance + cashRevenue - totalExpenses - explicitWithdrawals - totalWithdrawn;
+      openingBalance + totalIncome - totalExpenses - totalWithdrawn;
 }

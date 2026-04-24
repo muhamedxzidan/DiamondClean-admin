@@ -25,6 +25,8 @@ class CashboxCubit extends Cubit<CashboxState> {
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   bool _isListening = false;
   bool _rebuildScheduled = false;
+  bool _isDayEnded = false;
+  Timer? _midnightTimer;
 
   List<CashboxIncomeModel> _incomeEntries = [];
   List<CashboxExpenseModel> _expenses = [];
@@ -59,6 +61,7 @@ class CashboxCubit extends Cubit<CashboxState> {
     _subscribeToStream(_dataSource.watchClosures(), _updateClosures);
     _subscribeToStream(_dataSource.watchAuditLogs(), _updateAuditLogs);
     _isListening = true;
+    _scheduleMidnightTimer();
   }
 
   StreamSubscription<T> _subscribeToStream<T>(
@@ -198,6 +201,8 @@ class CashboxCubit extends Cubit<CashboxState> {
         sessionIncomeEntries: sessionSummary.incomeEntries,
         sessionExpenseEntries: sessionSummary.expenseEntries,
         sessionRevenue: sessionSummary.revenue,
+        sessionCashRevenue: sessionSummary.cashRevenue,
+        sessionElectronicRevenue: sessionSummary.electronicRevenue,
         sessionExpenses: sessionSummary.expensesTotal,
         sessionBalance: sessionSummary.balance,
         dailyIncomeEntries: _calculationService.dailyIncomeEntries(
@@ -213,12 +218,39 @@ class CashboxCubit extends Cubit<CashboxState> {
           selectedDay: _selectedDay,
         ),
         auditLogs: _auditLogs,
+        isDayEnded: _isDayEnded,
       ),
     );
   }
 
+  /// Dismiss the day-ended notification (user chose to continue).
+  void dismissDayEndedNotification() {
+    _isDayEnded = false;
+    _rebuild();
+  }
+
+  void _scheduleMidnightTimer() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final duration = nextMidnight.difference(now);
+
+    _midnightTimer = Timer(duration, () {
+      if (isClosed) return;
+      _onMidnightReached();
+    });
+  }
+
+  void _onMidnightReached() {
+    _isDayEnded = true;
+    _rebuild();
+    // Reschedule for next midnight
+    _scheduleMidnightTimer();
+  }
+
   @override
   Future<void> close() async {
+    _midnightTimer?.cancel();
     _cancelSubscriptions();
     return super.close();
   }

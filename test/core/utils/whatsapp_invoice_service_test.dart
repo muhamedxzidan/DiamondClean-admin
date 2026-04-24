@@ -10,7 +10,7 @@ void main() {
 
     expect(
       buildInvoiceMessage(order),
-      'Diamond Clean\n'
+      'demo clean admin\n'
       'رقم الفاتورة: 100\n'
       'التاريخ: 2026/04/09\n'
       '--------------------\n'

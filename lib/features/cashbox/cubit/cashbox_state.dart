@@ -29,6 +29,8 @@ class CashboxLoaded extends CashboxState {
   final List<CashboxIncomeModel> sessionIncomeEntries;
   final List<CashboxExpenseModel> sessionExpenseEntries;
   final double sessionRevenue;
+  final double sessionCashRevenue;
+  final double sessionElectronicRevenue;
   final double sessionExpenses;
   final double sessionBalance;
 
@@ -40,18 +42,24 @@ class CashboxLoaded extends CashboxState {
   /// Audit log for all operations.
   final List<CashboxAuditLogModel> auditLogs;
 
+  /// Whether the day has ended (midnight reached) and cashbox should be closed.
+  final bool isDayEnded;
+
   const CashboxLoaded({
     required this.selectedDay,
     required this.settings,
     required this.sessionIncomeEntries,
     required this.sessionExpenseEntries,
     required this.sessionRevenue,
+    required this.sessionCashRevenue,
+    required this.sessionElectronicRevenue,
     required this.sessionExpenses,
     required this.sessionBalance,
     required this.dailyIncomeEntries,
     required this.dailyExpenses,
     required this.dailyClosures,
     this.auditLogs = const [],
+    this.isDayEnded = false,
   });
 
   List<TreasuryLogEntry> get treasuryLogEntries {

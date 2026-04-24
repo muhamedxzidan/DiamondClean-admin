@@ -1,11 +1,11 @@
 {
-    "name": "diamond_clean",
-    "short_name": "diamond_clean",
+    "name": "demo clean admin",
+    "short_name": "demo clean admin",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "demo clean admin",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

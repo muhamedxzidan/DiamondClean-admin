@@ -11,4 +11,5 @@ class FirebaseConstants {
   static const String cashboxExpensesCollection = 'cashbox_expenses';
   static const String cashboxClosuresCollection = 'cashbox_closures';
   static const String cashboxAuditLogsCollection = 'cashbox_audit_logs';
+  static const String treasuryTransactionsCollection = 'treasury_transactions';
 }

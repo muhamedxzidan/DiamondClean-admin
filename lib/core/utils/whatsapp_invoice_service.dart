@@ -38,7 +38,7 @@ class WhatsappInvoiceService {
 @visibleForTesting
 String buildInvoiceMessage(OrderModel order) {
   final buffer = StringBuffer()
-    ..writeln('Diamond Clean')
+    ..writeln('demo clean admin')
     ..writeln('رقم الفاتورة: ${order.displayRef}')
     ..writeln('التاريخ: ${_formatDate(order.createdAt)}')
     ..writeln('--------------------')
