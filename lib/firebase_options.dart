@@ -31,10 +31,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
@@ -50,22 +47,32 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAJFhb9aysrzPAUdBydu4Z8Own_OEnTnas',
-    appId: '1:933662549011:web:a06bad719eab40239ccbe6',
-    messagingSenderId: '933662549011',
-    projectId: 'fir-clean-6ed6c',
-    authDomain: 'fir-clean-6ed6c.firebaseapp.com',
-    storageBucket: 'fir-clean-6ed6c.firebasestorage.app',
-    measurementId: 'G-MNZJZ20TFX',
+    apiKey: 'AIzaSyAyrKk2ZBWPGSZ-bJQmMZoTchbLjw6Olgo',
+    appId: '1:718127856617:web:f5d0fbe948f049171c6978',
+    messagingSenderId: '718127856617',
+    projectId: 'daimound-clean',
+    authDomain: 'daimound-clean.firebaseapp.com',
+    storageBucket: 'daimound-clean.firebasestorage.app',
+    measurementId: 'G-MLSNEP423X',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAJFhb9aysrzPAUdBydu4Z8Own_OEnTnas',
-    appId: '1:933662549011:web:a06bad719eab40239ccbe6',
-    messagingSenderId: '933662549011',
-    projectId: 'fir-clean-6ed6c',
-    authDomain: 'fir-clean-6ed6c.firebaseapp.com',
-    storageBucket: 'fir-clean-6ed6c.firebasestorage.app',
-    measurementId: 'G-MNZJZ20TFX',
+    apiKey: 'AIzaSyAyrKk2ZBWPGSZ-bJQmMZoTchbLjw6Olgo',
+    appId: '1:718127856617:web:43de9f132f98cdec1c6978',
+    messagingSenderId: '718127856617',
+    projectId: 'daimound-clean',
+    authDomain: 'daimound-clean.firebaseapp.com',
+    storageBucket: 'daimound-clean.firebasestorage.app',
+    measurementId: 'G-BC91VW8GEH',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyD53je3Z5sbNovwM0EZyrUZtKJS4ress-8',
+    appId: '1:718127856617:ios:a45c153293aa8f9e1c6978',
+    messagingSenderId: '718127856617',
+    projectId: 'daimound-clean',
+    storageBucket: 'daimound-clean.firebasestorage.app',
+    iosBundleId: 'com.example.diamondClean',
+  );
+
 }
