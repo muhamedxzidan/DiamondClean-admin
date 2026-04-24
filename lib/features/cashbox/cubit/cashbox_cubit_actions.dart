@@ -208,3 +208,17 @@ Future<void> _cashboxCloseCashbox(CashboxCubit cubit, String closedBy) async {
     );
   });
 }
+
+Future<void> _cashboxClearAllData(CashboxCubit cubit) async {
+  await cubit._dataSource.clearAllCashboxData();
+  
+  await _cashboxLogAuditEvent(
+    cubit,
+    eventType: AuditEventType.factoryReset,
+    operationId: 'clear_all_data_${DateTime.now().microsecondsSinceEpoch}',
+    performedBy: 'Admin',
+    amount: 0.0,
+    description: 'DANGER: Factory reset of all cashbox financial data.',
+    isValid: true,
+  );
+}

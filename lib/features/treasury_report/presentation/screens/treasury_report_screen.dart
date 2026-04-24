@@ -104,6 +104,80 @@ class _TreasuryReportScreenState extends State<TreasuryReportScreen> {
             icon: const Icon(Icons.lock_outline),
             tooltip: AppStrings.cashboxPinChange,
           ),
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'clear_data') {
+                final cubit = context.read<CashboxCubit>();
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Text('تأكيد مسح البيانات!'),
+                      ],
+                    ),
+                    content: const Text(
+                      'هل أنت متأكد أنك تريد مسح كافة التعاملات المالية للخزنة '
+                      '(إيرادات، مصروفات، سجلات إقفال) والبدء من جديد؟\n\n'
+                      'هذا الإجراء لا يمكن التراجع عنه.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('إلغاء'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('نعم، امسح كل البيانات'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await cubit.clearAllCashboxData();
+                  // Re-load the report to show empty state
+                  _loadReport();
+                  if (mounted) {
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('تم مسح وإعادة ضبط بيانات الخزنة بنجاح.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'clear_data',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_forever,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'تصفير الخزنة ومسح كل السجلات',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Column(

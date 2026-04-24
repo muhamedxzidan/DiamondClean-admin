@@ -23,6 +23,9 @@ class _FakeCashboxRemoteDataSource implements CashboxRemoteDataSource {
       StreamController<List<CashboxAuditLogModel>>.broadcast();
 
   @override
+  Future<void> clearAllCashboxData() async {}
+
+  @override
   Stream<List<CashboxAuditLogModel>> watchAuditLogs() => auditController.stream;
 
   @override

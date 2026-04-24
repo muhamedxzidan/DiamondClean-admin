@@ -185,6 +185,11 @@ class CashboxCubit extends Cubit<CashboxState> {
     return _cashboxCloseCashbox(this, closedBy);
   }
 
+  /// DANGEROUS: Wipes all cashbox data (income, expenses, closures, logs) to start fresh.
+  Future<void> clearAllCashboxData() {
+    return _cashboxClearAllData(this);
+  }
+
   CashboxSessionSummary _sessionSummary() {
     return _cashboxSessionSummary(this);
   }

@@ -4,12 +4,14 @@ import 'package:diamond_clean/core/constants/app_strings.dart';
 
 import '../../core/orders_grouping.dart';
 import '../../data/models/order_model.dart';
+import '../models/order_search_type.dart';
 import '../widgets/orders_day_group.dart';
 import '../widgets/orders_status_filter.dart';
 
 class OrdersLoadedContent extends StatefulWidget {
   final List<OrderModel> orders;
   final String searchQuery;
+  final OrderSearchType searchType;
   final OrderFilterMode selectedFilter;
   final void Function(OrderModel order) onOpenPricing;
   final Future<void> Function(OrderModel order) onSendInvoice;
@@ -21,6 +23,7 @@ class OrdersLoadedContent extends StatefulWidget {
     super.key,
     required this.orders,
     required this.searchQuery,
+    required this.searchType,
     required this.selectedFilter,
     required this.onOpenPricing,
     required this.onSendInvoice,
@@ -62,9 +65,7 @@ class _OrdersLoadedContentState extends State<OrdersLoadedContent> {
   List<OrderModel> _filterOrders() {
     return widget.orders.where((order) {
       final matchesSearch =
-          widget.searchQuery.isEmpty ||
-          _matchesPhone(order.customerPhone) ||
-          _matchesInvoice(order.invoiceNumber);
+          widget.searchQuery.isEmpty || _checkSearchMatch(order);
       final matchesFilter = OrdersStatusFilter.matchesFilter(
         order,
         widget.selectedFilter,
@@ -73,12 +74,34 @@ class _OrdersLoadedContentState extends State<OrdersLoadedContent> {
     }).toList();
   }
 
+  bool _checkSearchMatch(OrderModel order) {
+    switch (widget.searchType) {
+      case OrderSearchType.all:
+        return _matchesPhone(order.customerPhone) ||
+            _matchesInvoice(order.invoiceNumber) ||
+            _matchesName(order.customerName);
+      case OrderSearchType.invoice:
+        return _matchesInvoiceExact(order.invoiceNumber);
+      case OrderSearchType.phone:
+        return _matchesPhone(order.customerPhone);
+      case OrderSearchType.name:
+        return _matchesName(order.customerName);
+    }
+  }
+
   bool _matchesPhone(String value) =>
+      value.toLowerCase().contains(widget.searchQuery);
+
+  bool _matchesName(String value) =>
       value.toLowerCase().contains(widget.searchQuery);
 
   bool _matchesInvoice(int? invoiceNumber) =>
       invoiceNumber != null &&
       invoiceNumber.toString().contains(widget.searchQuery);
+
+  bool _matchesInvoiceExact(int? invoiceNumber) =>
+      invoiceNumber != null &&
+      invoiceNumber.toString() == widget.searchQuery;
 
   bool get _hasActiveFilters =>
       widget.searchQuery.isNotEmpty ||

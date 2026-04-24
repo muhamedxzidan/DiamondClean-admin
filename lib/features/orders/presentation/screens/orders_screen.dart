@@ -8,6 +8,7 @@ import '../../cubit/orders_state.dart';
 import '../../data/models/order_model.dart';
 import '../widgets/completion_payment_dialog.dart';
 import '../widgets/order_pricing_dialog.dart';
+import '../models/order_search_type.dart';
 import '../widgets/orders_error_view.dart';
 import '../widgets/orders_loaded_content.dart';
 import '../widgets/orders_search_bar.dart';
@@ -24,6 +25,7 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   late final TextEditingController _searchController;
   String _searchQuery = '';
+  OrderSearchType _searchType = OrderSearchType.all;
   OrderFilterMode _selectedFilter = OrderFilterMode.all;
 
   @override
@@ -130,6 +132,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
               setState(() => _searchQuery = '');
             },
           ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              children: OrderSearchType.values.map((type) {
+                return ChoiceChip(
+                  label: Text(type.label),
+                  selected: _searchType == type,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _searchType = type);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
           OrdersStatusFilter(
             selectedFilter: _selectedFilter,
             onChanged: (filter) {
@@ -165,6 +186,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 OrdersLoaded(:final orders) => OrdersLoadedContent(
                   orders: orders,
                   searchQuery: _searchQuery,
+                  searchType: _searchType,
                   selectedFilter: _selectedFilter,
                   onOpenPricing: _showPricingDialog,
                   onSendInvoice: _sendInvoice,

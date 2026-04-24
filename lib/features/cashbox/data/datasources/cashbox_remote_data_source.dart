@@ -33,4 +33,7 @@ abstract class CashboxRemoteDataSource {
 
   /// Log an operation to the audit trail.
   Future<void> logAuditEvent(CashboxAuditLogModel event);
+
+  /// DANGEROUS: Wipes all cashbox data (income, expenses, closures, logs) to start fresh.
+  Future<void> clearAllCashboxData();
 }

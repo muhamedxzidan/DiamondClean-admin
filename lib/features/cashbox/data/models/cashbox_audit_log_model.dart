@@ -67,7 +67,8 @@ enum AuditEventType {
   cashboxClosed('cashbox_closed', 'إغلاق الخزنة'),
   pinChanged('pin_changed', 'تغيير كلمة المرور'),
   validationFailed('validation_failed', 'فشل التحقق'),
-  operationFailed('operation_failed', 'فشل العملية');
+  operationFailed('operation_failed', 'فشل العملية'),
+  factoryReset('factory_reset', 'مسح جميع البيانات');
 
   final String value;
   final String label;
@@ -84,6 +85,7 @@ enum AuditEventType {
     'pin_changed' => AuditEventType.pinChanged,
     'validation_failed' => AuditEventType.validationFailed,
     'operation_failed' => AuditEventType.operationFailed,
+    'factory_reset' => AuditEventType.factoryReset,
     _ => AuditEventType.operationFailed,
   };
 }

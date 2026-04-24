@@ -227,4 +227,44 @@ class CashboxRemoteDataSourceImpl implements CashboxRemoteDataSource {
         .doc(event.id)
         .set(event.toFirestore());
   }
+
+  @override
+  Future<void> clearAllCashboxData() async {
+    Future<void> deleteCollectionInBatches(String collectionPath) async {
+      final collection = _firestore.collection(collectionPath);
+      bool hasMore = true;
+      while (hasMore) {
+        final snapshot = await collection.limit(500).get();
+        if (snapshot.docs.isEmpty) {
+          hasMore = false;
+          break;
+        }
+        final batch = _firestore.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    }
+
+    // Delete all data collections
+    await Future.wait([
+      deleteCollectionInBatches(FirebaseConstants.cashboxIncomeCollection),
+      deleteCollectionInBatches(FirebaseConstants.cashboxExpensesCollection),
+      deleteCollectionInBatches(FirebaseConstants.cashboxClosuresCollection),
+      deleteCollectionInBatches(FirebaseConstants.cashboxAuditLogsCollection),
+    ]);
+
+    // Reset settings to initial state but keep the PIN if it exists
+    final pin = await getOwnerPin();
+    await _settingsRef.set({
+      'openingBalance': 0,
+      'openedAt': FieldValue.delete(),
+      'openedBy': FieldValue.delete(),
+      'lastClosedAt': FieldValue.delete(),
+      'lastClosedBy': FieldValue.delete(),
+      'lastClosingBalance': FieldValue.delete(),
+      if (pin != null) 'ownerPin': pin,
+    });
+  }
 }

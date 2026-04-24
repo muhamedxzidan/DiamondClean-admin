@@ -10,6 +10,7 @@ class CashboxAppBarActions extends StatelessWidget {
   final VoidCallback onOpeningBalancePressed;
   final VoidCallback onClosuresLogPressed;
   final VoidCallback onTreasuryLogPressed;
+  final VoidCallback onClearDataPressed;
 
   const CashboxAppBarActions({
     super.key,
@@ -20,6 +21,7 @@ class CashboxAppBarActions extends StatelessWidget {
     required this.onOpeningBalancePressed,
     required this.onClosuresLogPressed,
     required this.onTreasuryLogPressed,
+    required this.onClearDataPressed,
   });
 
   @override
@@ -55,6 +57,33 @@ class CashboxAppBarActions extends StatelessWidget {
           icon: const Icon(Icons.receipt_long_outlined),
           tooltip: AppStrings.cashboxTreasuryLog,
         ),
+        if (!locked)
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'clear_data') onClearDataPressed();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'clear_data',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_forever,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'تصفير الخزنة ومسح كل السجلات',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
