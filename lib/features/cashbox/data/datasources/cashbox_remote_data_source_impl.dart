@@ -264,7 +264,7 @@ class CashboxRemoteDataSourceImpl implements CashboxRemoteDataSource {
       'lastClosedAt': FieldValue.delete(),
       'lastClosedBy': FieldValue.delete(),
       'lastClosingBalance': FieldValue.delete(),
-      if (pin != null) 'ownerPin': pin,
+      'ownerPin': ?pin,
     });
   }
 }

@@ -59,11 +59,9 @@ class PrintPreviewDialog extends StatelessWidget {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ...order.items.map(
-                  (item) => PrintItemRow(item: item),
-                ),
+                ...order.items.map((item) => PrintItemRow(item: item)),
               ],
-              if (order.deliveryFee > 0) ...[
+              if (order.deliveryFee >= 0) ...[
                 const Divider(height: 24),
                 PrintRow(
                   label: AppStrings.deliveryFee,
